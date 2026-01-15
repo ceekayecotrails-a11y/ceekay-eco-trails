@@ -334,7 +334,7 @@ def page_driver_form(driver):
 def page_driver_summary(driver):
     st.markdown("<div class='title-text'>📄 My Summary</div>", unsafe_allow_html=True)
 
-        df = pd.DataFrame(daily_sheet.get_all_records())
+    df = pd.DataFrame(daily_sheet.get_all_records())
     df = df[df["driver_name"] == driver["driver_name"]]
 
     if df.empty:
@@ -922,4 +922,5 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 

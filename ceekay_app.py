@@ -372,45 +372,35 @@ def page_earnings_report(user_type, driver=None):
 
         st.subheader("Daily Summary")
 
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Fare", f"Rs {f['fare'].sum():,.2f}")
-        c2.metric("Driver Salary", f"Rs {f['total_driver_salary'].sum():,.2f}")
-        c3.metric("Mileage", f"{f['daily_mileage'].sum()} km")
+c1, c2, c3 = st.columns(3)
+c1.metric("Total Mileage", f"{f['daily_mileage'].sum()} km")
+c2.metric("Uber Mileage", f"{f['uber_hire_mileage'].sum()} km")
+c3.metric("Loss Mileage", f"{f['loss_mileage'].sum()} km")
 
-        st.dataframe(f)
+c4, c5, c6 = st.columns(3)
+c4.metric("Fare", f"Rs {f['fare'].sum():,.2f}")
+c5.metric("Tip", f"Rs {f['tip'].sum():,.2f}")
+c6.metric("Toll Fee", f"Rs {f['toll_fee'].sum():,.2f}")
 
-    else:
-        col1, col2 = st.columns(2)
-        start_date = col1.date_input("Start Date")
-        end_date = col2.date_input("End Date")
-
-        mask = (df["date"] >= pd.to_datetime(start_date)) & (df["date"] <= pd.to_datetime(end_date))
-        f = df[mask]
-
-        if f.empty:
-            st.info("No records found for this date range.")
-            return
+c7, c8 = st.columns(2)
+c7.metric("Driver Salary (30%)", f"Rs {f['driver_salary'].sum():,.2f}")
+c8.metric("Total Driver Salary", f"Rs {f['total_driver_salary'].sum():,.2f}")
 
         st.subheader("Date Range Summary")
 
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Total Fare", f"Rs {f['fare'].sum():,.2f}")
-        c2.metric("Total Driver Salary", f"Rs {f['total_driver_salary'].sum():,.2f}")
-        c3.metric("Total Mileage", f"{f['daily_mileage'].sum()} km")
+c1, c2, c3 = st.columns(3)
+c1.metric("Total Mileage", f"{f['daily_mileage'].sum()} km")
+c2.metric("Uber Mileage", f"{f['uber_hire_mileage'].sum()} km")
+c3.metric("Loss Mileage", f"{f['loss_mileage'].sum()} km")
 
-        c4, c5, c6 = st.columns(3)
-        c4.metric("Total Cash", f"Rs {f['cash_collected'].sum():,.2f}")
-        c5.metric("Total Bank", f"Rs {f['bank'].sum():,.2f}")
-        c6.metric("Loss Mileage", f"{f['loss_mileage'].sum()} km")
+c4, c5, c6 = st.columns(3)
+c4.metric("Fare", f"Rs {f['fare'].sum():,.2f}")
+c5.metric("Tip", f"Rs {f['tip'].sum():,.2f}")
+c6.metric("Toll Fee", f"Rs {f['toll_fee'].sum():,.2f}")
 
-        st.subheader("Chart View")
-        fig = px.line(f, x="date", y="fare", title="Fare Over Time")
-        st.plotly_chart(fig, use_container_width=True)
-
-        st.subheader("Detailed Table")
-        st.dataframe(f)
-
-        st.download_button("Download as CSV", f.to_csv(index=False), "earnings_report.csv")
+c7, c8 = st.columns(2)
+c7.metric("Driver Salary (30%)", f"Rs {f['driver_salary'].sum():,.2f}")
+c8.metric("Total Driver Salary", f"Rs {f['total_driver_salary'].sum():,.2f}")
 
 # -------------------------------------------------------------------
 # ADMIN DASHBOARD PAGE
@@ -926,6 +916,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

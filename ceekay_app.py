@@ -179,11 +179,12 @@ def sidebar_menu(user_type):
     }
 
     if user_type == "driver":
-        return st.sidebar.radio(
-            "",
-            ["Home", "Daily Report", "My Summary", "Earnings Report", "Logout"],
-            format_func=lambda x: f"{icons[x]} {x}"
-        )
+    return st.sidebar.radio(
+        "",
+        ["Home", "Daily Report", "Earnings Report", "Logout"],
+        format_func=lambda x: f"{icons[x]} {x}"
+    )
+
 
     if user_type == "admin":
         return st.sidebar.radio(
@@ -923,6 +924,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

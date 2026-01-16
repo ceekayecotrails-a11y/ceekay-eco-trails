@@ -21,15 +21,10 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Center images responsively (desktop + mobile) */
-    .center-logo {
-        text-align: center;
-        margin-bottom: 10px;
-    }
-    .center-logo img {
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
+    /* Perfect centering for Streamlit images (desktop + mobile) */
+    .center-logo [data-testid="stImage"] {
+        display: flex;
+        justify-content: center;
     }
     </style>
     """,
@@ -224,8 +219,8 @@ def page_driver_form(driver):
 
     # Centered logo (mobile + desktop safe)
     st.markdown("<div class='center-logo'>", unsafe_allow_html=True)
-    st.image("logo.png", width=180)
-    st.markdown("</div>", unsafe_allow_html=True)
+st.image("logo.png", width=180)
+st.markdown("</div>", unsafe_allow_html=True)
 
     fields = {
         "report_date": date.today(),
@@ -867,8 +862,9 @@ menu = st.sidebar.selectbox("Login", ["Driver", "Admin"])
 if menu == "Driver":
 
     st.markdown("<div class='center-logo'>", unsafe_allow_html=True)
-    st.image("logo.png", width=180)
-    st.markdown("</div>", unsafe_allow_html=True)
+st.image("logo.png", width=180)
+st.markdown("</div>", unsafe_allow_html=True)
+
 
     username = st.text_input("Driver Username")
     password = st.text_input("Password", type="password")
@@ -979,6 +975,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

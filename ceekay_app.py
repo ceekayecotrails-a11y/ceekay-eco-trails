@@ -169,6 +169,10 @@ def driver_auth(username, password):
 # -------------------------------------------------------------------
 def sidebar_menu(user_type):
 
+    with st.sidebar:
+        st.image("logo.png", use_column_width=True)
+        st.markdown("---")
+
     icons = {
         "Home": "🏠",
         "Daily Report": "📝",
@@ -179,7 +183,6 @@ def sidebar_menu(user_type):
         "Logout": "🚪"
     }
 
-    
     # DRIVER MENU
     if user_type == "driver":
         return st.sidebar.radio(
@@ -188,7 +191,6 @@ def sidebar_menu(user_type):
             format_func=lambda x: f"{icons[x]} {x}"
         )
 
-    
     # ADMIN MENU
     if user_type == "admin":
         return st.sidebar.radio(
@@ -951,6 +953,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

@@ -716,7 +716,7 @@ def page_admin_submissions():
         st.info("No submissions found.")
         return
 
-    df = df[df["status"].astype(str).lower() == "pending"]
+    df = df[df["status"].astype(str).str.lower() == "pending"]
 
     if df.empty:
         st.success("No pending submissions. All done!")
@@ -922,5 +922,6 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 

@@ -856,8 +856,9 @@ if st.session_state.get("page") == "driver":
         elif page == "Daily Report":
             st.error("You cannot submit a new report until admin confirms your last report.")
 
-        elif page == "My Summary":
-            page_driver_summary(driver)
+        # elif page == "My Summary":
+#     page_driver_summary(driver)
+
 
         elif page == "Earnings Report":
             page_earnings_report("driver", driver)
@@ -924,6 +925,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

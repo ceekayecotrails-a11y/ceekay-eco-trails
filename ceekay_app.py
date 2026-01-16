@@ -386,7 +386,7 @@ c7, c8 = st.columns(2)
 c7.metric("Driver Salary (30%)", f"Rs {f['driver_salary'].sum():,.2f}")
 c8.metric("Total Driver Salary", f"Rs {f['total_driver_salary'].sum():,.2f}")
 
-        st.subheader("Date Range Summary")
+st.subheader("Date Range Summary")
 
 c1, c2, c3 = st.columns(3)
 c1.metric("Total Mileage", f"{f['daily_mileage'].sum()} km")
@@ -916,6 +916,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

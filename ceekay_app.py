@@ -846,6 +846,10 @@ menu = st.sidebar.selectbox("Login", ["Driver", "Admin"])
 # DRIVER LOGIN
 if menu == "Driver":
 
+    st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
+    st.image("logo.png", width=180)
+    st.markdown("</div>", unsafe_allow_html=True)
+
     username = st.text_input("Driver Username")
     password = st.text_input("Password", type="password")
 
@@ -924,6 +928,10 @@ if st.session_state.get("page") == "driver":
 # ADMIN LOGIN
 if menu == "Admin":
 
+    st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
+    st.image("logo.png", width=180)
+    st.markdown("</div>", unsafe_allow_html=True)
+
     pw = st.text_input("Admin Password", type="password")
 
     if st.button("Login as Admin"):
@@ -953,6 +961,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

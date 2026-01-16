@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 # -------------------------------------------------------------------
 st.set_page_config(
     page_title="CEEKAY Eco Trails",
-    page_icon="🚗",
+    page_icon="",
     layout="wide"
 )
 
@@ -951,6 +951,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

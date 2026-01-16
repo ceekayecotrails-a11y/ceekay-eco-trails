@@ -442,48 +442,65 @@ def page_earnings_report(user_type, driver=None):
 # -------------------------------------------------------------------
 def page_admin_dashboard():
 
-# ---------------------- ADVANCED TREND CHART ----------------------
-st.subheader("📊 Trend Analytics")
+    st.markdown("<h2>📊 Admin Dashboard</h2>", unsafe_allow_html=True)
 
-col1, col2 = st.columns(2)
-start_date = col1.date_input("From Date", df["date"].min())
-end_date = col2.date_input("To Date", df["date"].max())
+    df = pd.DataFrame(daily_sheet.get_all_records())
 
-mask = (df["date"] >= pd.to_datetime(start_date)) & (df["date"] <= pd.to_datetime(end_date))
-filtered = df[mask]
+    if df.empty:
+        st.warning("No data available.")
+        return
 
-trend_options = {
-    "Daily Fare": "fare",
-    "Driver Salary": "driver_salary",
-    "Total Mileage": "daily_mileage",
-    "Uber Mileage": "uber_hire_mileage",
-    "Loss Mileage": "loss_mileage",
-    "Cash Collected": "cash_collected",
-    "Amount to CEEKAY": "amount_to_ceekay"
-}
+    # Convert numeric values
+    numeric_cols = [
+        "fare", "driver_salary", "toll_fee", "other_expenses",
+        "daily_mileage", "uber_hire_mileage", "loss_mileage",
+        "platform_fee", "amount_to_ceekay", "bank_deposit", "cash_collected"
+    ]
+    for col in numeric_cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
 
-selected_trend = st.selectbox("Select Trend to View:", list(trend_options.keys()))
+    # Convert date
+    df["date"] = pd.to_datetime(df["date"])
 
-y_column = trend_options[selected_trend]
+    # ---------------------- ADVANCED TREND CHART ----------------------
+    st.subheader("📊 Trend Analytics")
 
-daily_data = filtered.groupby(filtered["date"].dt.date)[y_column].sum().reset_index()
-daily_data.columns = ["date", "value"]
+    col1, col2 = st.columns(2)
+    start_date = col1.date_input("From Date", df["date"].min())
+    end_date = col2.date_input("To Date", df["date"].max())
 
-fig = px.line(
-    daily_data,
-    x="date",
-    y="value",
-    title=f"{selected_trend} Trend",
-    markers=True
-)
+    mask = (df["date"] >= pd.to_datetime(start_date)) & (df["date"] <= pd.to_datetime(end_date))
+    filtered = df[mask]
 
-st.plotly_chart(fig, use_container_width=True)
-st.markdown("---")
+    trend_options = {
+        "Daily Fare": "fare",
+        "Driver Salary": "driver_salary",
+        "Total Mileage": "daily_mileage",
+        "Uber Mileage": "uber_hire_mileage",
+        "Loss Mileage": "loss_mileage",
+        "Cash Collected": "cash_collected",
+        "Amount to CEEKAY": "amount_to_ceekay"
+    }
 
+    selected_trend = st.selectbox("Select Trend to View:", list(trend_options.keys()))
+    y_column = trend_options[selected_trend]
 
+    daily_data = filtered.groupby(filtered["date"].dt.date)[y_column].sum().reset_index()
+    daily_data.columns = ["date", "value"]
+
+    fig = px.line(
+        daily_data,
+        x="date",
+        y="value",
+        title=f"{selected_trend} Trend",
+        markers=True
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    st.markdown("---")
     # --------------------------------------------------------------
 
-    # EXISTING Admin summary calculations below...
+    # ---------------------- ADMIN SUMMARY SECTION ----------------------
     total_fare = df["fare"].sum()
     total_salary = df["driver_salary"].sum()
     total_daily_mileage = df["daily_mileage"].sum()
@@ -497,9 +514,9 @@ st.markdown("---")
     net_profit = total_fare - total_cost
 
     cash_flow = (
-        df["amount_to_ceekay"].sum()
-        + df["bank_deposit"].sum()
-        - df["platform_fee"].sum()
+        df["amount_to_ceekay"].sum() +
+        df["bank_deposit"].sum() -
+        df["platform_fee"].sum()
     )
 
     col1, col2, col3 = st.columns(3)
@@ -931,6 +948,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

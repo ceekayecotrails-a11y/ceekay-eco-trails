@@ -17,10 +17,7 @@ st.set_page_config(
     page_icon="",
     layout="wide"
 )
-# ---------------- LOGO AT TOP ----------------
-st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
-st.image("logo.png", width=180)
-st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 # -------------------------------------------------------------------
@@ -182,6 +179,7 @@ def sidebar_menu(user_type):
         "Logout": "🚪"
     }
 
+    
     # DRIVER MENU
     if user_type == "driver":
         return st.sidebar.radio(
@@ -190,6 +188,11 @@ def sidebar_menu(user_type):
             format_func=lambda x: f"{icons[x]} {x}"
         )
 
+# ---------------- LOGO AT TOP ----------------
+st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
+st.image("logo.png", width=180)
+st.markdown("</div>", unsafe_allow_html=True)
+    
     # ADMIN MENU
     if user_type == "admin":
         return st.sidebar.radio(
@@ -198,6 +201,10 @@ def sidebar_menu(user_type):
             format_func=lambda x: f"{icons[x]} {x}"
         )
 
+# ---------------- LOGO AT TOP ----------------
+st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
+st.image("logo.png", width=180)
+st.markdown("</div>", unsafe_allow_html=True)
 
 # -------------------------------------------------------------------
 # DRIVER DAILY REPORT FORM
@@ -953,6 +960,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

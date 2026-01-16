@@ -18,6 +18,24 @@ st.set_page_config(
     layout="wide"
 )
 
+st.markdown(
+    """
+    <style>
+    /* Center images responsively (desktop + mobile) */
+    .center-logo {
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    .center-logo img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 
 
 # -------------------------------------------------------------------
@@ -958,6 +976,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

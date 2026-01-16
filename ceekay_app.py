@@ -839,7 +839,6 @@ def page_admin_submissions():
 if "page" not in st.session_state:
     st.session_state.page = None
 
-st.title("🚗 CEEKAY Eco Trails System")
 
 menu = st.sidebar.selectbox("Login", ["Driver", "Admin"])
 
@@ -961,6 +960,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

@@ -450,16 +450,46 @@ def page_admin_dashboard():
         st.warning("No data available.")
         return
 
+    # Convert numeric columns
     numeric_cols = [
         "fare", "driver_salary", "toll_fee", "other_expenses",
         "daily_mileage", "uber_hire_mileage", "loss_mileage",
         "platform_fee", "amount_to_ceekay", "bank_deposit"
     ]
-
     for col in numeric_cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
 
+    # Convert date column
+    df["date"] = pd.to_datetime(df["date"])
+
+    # ---------------------- FARE TREND CHART ----------------------
+    st.subheader("📅 Fare Trend Analysis")
+
+    col1, col2 = st.columns(2)
+    start_date = col1.date_input("From Date", df["date"].min())
+    end_date = col2.date_input("To Date", df["date"].max())
+
+    mask = (df["date"] >= pd.to_datetime(start_date)) & (df["date"] <= pd.to_datetime(end_date))
+    filtered = df[mask]
+
+    # Daily fare grouped
+    daily_fare = filtered.groupby(filtered["date"].dt.date)["fare"].sum().reset_index()
+    daily_fare.columns = ["date", "total_fare"]
+
+    fig = px.line(
+        daily_fare,
+        x="date",
+        y="total_fare",
+        title="Daily Fare Trend",
+        markers=True
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+    st.markdown("---")
+    # --------------------------------------------------------------
+
+    # EXISTING Admin summary calculations below...
     total_fare = df["fare"].sum()
     total_salary = df["driver_salary"].sum()
     total_daily_mileage = df["daily_mileage"].sum()
@@ -489,80 +519,6 @@ def page_admin_dashboard():
     col6.metric("Loss Mileage", f"{total_loss_mileage} km")
 
     st.metric("Cash Flow", f"Rs. {cash_flow:,.2f}")
-
-    st.markdown("---")
-
-    st.markdown("### 🌈 Performance Comparison (Compact View)")
-
-    import numpy as np
-
-    fare_value = total_fare
-    cash_value = cash_flow
-    net_value = net_profit
-
-    cash_pct = (cash_value / fare_value * 100) if fare_value > 0 else 0
-    net_pct = (net_value / fare_value * 100) if fare_value > 0 else 0
-
-    labels = [
-        f"Total Fare\n100%",
-        f"Cash Flow\n{cash_pct:.1f}%",
-        f"Net Earnings\n{net_pct:.1f}%"
-    ]
-
-    values = np.array([fare_value, cash_value, net_value])
-    colors = ["#009dff", "#00ffbb", "#ffd84d"]
-
-    fig, ax = plt.subplots(figsize=(5.5, 2.6))
-    plt.style.use("dark_background")
-
-    bars = ax.barh(labels, values, height=0.38, color=colors, edgecolor="#111", linewidth=1)
-
-    for i, bar in enumerate(bars):
-        ax.barh(labels[i], values[i], height=0.38, color="#00000022", zorder=-1)
-
-    for i, v in enumerate(values):
-        ax.text(v * 0.98, i, f"Rs {v:,.0f}", va='center', ha='right', fontsize=10, color="white", fontweight="bold")
-
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
-    ax.tick_params(left=False, bottom=False, labelsize=9)
-
-    ax.set_xlabel("Amount (Rs.)", fontsize=10, color="#bbbbbb")
-    ax.set_ylabel("")
-    plt.tight_layout()
-
-    st.pyplot(fig)
-
-# ---------------------- FARE TREND CHART ----------------------
-st.subheader("📅 Fare Trend Analysis")
-
-df["date"] = pd.to_datetime(df["date"])
-
-col1, col2 = st.columns(2)
-start_date = col1.date_input("From Date", df["date"].min())
-end_date = col2.date_input("To Date", df["date"].max())
-
-mask = (df["date"] >= pd.to_datetime(start_date)) & (df["date"] <= pd.to_datetime(end_date))
-filtered = df[mask]
-
-# Daily fare grouped
-daily_fare = filtered.groupby(filtered["date"].dt.date)["fare"].sum().reset_index()
-daily_fare.columns = ["date", "total_fare"]
-
-fig = px.line(
-    daily_fare,
-    x="date",
-    y="total_fare",
-    title="Daily Fare Trend",
-    markers=True
-)
-
-st.plotly_chart(fig, use_container_width=True)
-
-st.markdown("---")
-# --------------------------------------------------------------
 
 
 # -------------------------------------------------------------------
@@ -981,6 +937,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

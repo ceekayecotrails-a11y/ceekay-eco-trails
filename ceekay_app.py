@@ -222,9 +222,10 @@ def sidebar_menu(user_type):
 # -------------------------------------------------------------------
 def page_driver_form(driver):
 
-st.markdown("<div class='center-logo'>", unsafe_allow_html=True)
-st.image("logo.png", width=180)
-st.markdown("</div>", unsafe_allow_html=True)
+    # Centered logo (mobile + desktop safe)
+    st.markdown("<div class='center-logo'>", unsafe_allow_html=True)
+    st.image("logo.png", width=180)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     fields = {
         "report_date": date.today(),
@@ -978,6 +979,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

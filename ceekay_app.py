@@ -390,8 +390,10 @@ def page_earnings_report(user_type, driver=None):
         c7.metric("Driver Salary (30%)", f"Rs {f['driver_salary'].sum():,.2f}")
         c8.metric("Total Driver Salary", f"Rs {f['total_driver_salary'].sum():,.2f}")
 
-        st.subheader("Detailed Table")
-        st.dataframe(f)
+# REMOVE detailed table block
+# st.subheader("Detailed Table")
+# st.dataframe(f)
+
 
     # -------------------------------------------------------------
     # DATE RANGE REPORT
@@ -429,10 +431,11 @@ def page_earnings_report(user_type, driver=None):
         fig = px.line(f, x="date", y="fare", title="Fare Over Time")
         st.plotly_chart(fig, use_container_width=True)
 
-        st.subheader("Detailed Table")
-        st.dataframe(f)
+# REMOVE detailed table block
+# st.subheader("Detailed Table")
+# st.dataframe(f)
+# st.download_button("Download as CSV", f.to_csv(index=False), "earnings_report.csv")
 
-        st.download_button("Download as CSV", f.to_csv(index=False), "earnings_report.csv")
 
 # -------------------------------------------------------------------
 # ADMIN DASHBOARD PAGE
@@ -948,6 +951,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

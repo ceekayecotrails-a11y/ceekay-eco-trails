@@ -932,19 +932,13 @@ if st.session_state.get("page") == "driver":
 # ADMIN LOGIN
 if menu == "Admin":
 
-    st.markdown(
-        """
-        <div style='display: flex; justify-content: center; align-items: center;'>
-            <img src='logo.png' width='180'>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
+    st.image("logo.png", width=180)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     pw = st.text_input("Admin Password", type="password")
 
     if st.button("Login as Admin"):
-
         if pw == ADMIN_PASSWORD:
             st.session_state["page"] = "admin"
             st.session_state["is_admin_logged"] = True
@@ -970,6 +964,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

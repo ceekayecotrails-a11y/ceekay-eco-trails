@@ -535,6 +535,36 @@ def page_admin_dashboard():
 
     st.pyplot(fig)
 
+# ---------------------- FARE TREND CHART ----------------------
+st.subheader("📅 Fare Trend Analysis")
+
+df["date"] = pd.to_datetime(df["date"])
+
+col1, col2 = st.columns(2)
+start_date = col1.date_input("From Date", df["date"].min())
+end_date = col2.date_input("To Date", df["date"].max())
+
+mask = (df["date"] >= pd.to_datetime(start_date)) & (df["date"] <= pd.to_datetime(end_date))
+filtered = df[mask]
+
+# Daily fare grouped
+daily_fare = filtered.groupby(filtered["date"].dt.date)["fare"].sum().reset_index()
+daily_fare.columns = ["date", "total_fare"]
+
+fig = px.line(
+    daily_fare,
+    x="date",
+    y="total_fare",
+    title="Daily Fare Trend",
+    markers=True
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+st.markdown("---")
+# --------------------------------------------------------------
+
+
 # -------------------------------------------------------------------
 # ADMIN DAILY PROFIT REPORT
 # -------------------------------------------------------------------
@@ -951,6 +981,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

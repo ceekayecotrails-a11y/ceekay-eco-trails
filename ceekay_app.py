@@ -217,10 +217,10 @@ def sidebar_menu(user_type):
 # -------------------------------------------------------------------
 def page_driver_form(driver):
 
-    # Centered logo (mobile + desktop safe)
+    # Centered logo (desktop + mobile safe)
     st.markdown("<div class='center-logo'>", unsafe_allow_html=True)
-st.image("logo.png", width=180)
-st.markdown("</div>", unsafe_allow_html=True)
+    st.image("logo.png", width=180)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     fields = {
         "report_date": date.today(),
@@ -235,6 +235,9 @@ st.markdown("</div>", unsafe_allow_html=True)
         "calc_done": False,
         "screenshot": None
     }
+
+    # (rest of your existing form code continues here,
+    # also indented with 4 spaces)
 
     for k, v in fields.items():
         st.session_state.setdefault(k, v)
@@ -975,6 +978,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

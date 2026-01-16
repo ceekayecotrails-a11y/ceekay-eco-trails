@@ -170,7 +170,6 @@ def sidebar_menu(user_type):
     icons = {
         "Home": "🏠",
         "Daily Report": "📝",
-        "My Summary": "📄",
         "Earnings Report": "📊",
         "Dashboard": "📊",
         "Profit Reports": "📈",
@@ -178,20 +177,22 @@ def sidebar_menu(user_type):
         "Logout": "🚪"
     }
 
+    # DRIVER MENU
     if user_type == "driver":
-    return st.sidebar.radio(
-        "",
-        ["Home", "Daily Report", "Earnings Report", "Logout"],
-        format_func=lambda x: f"{icons[x]} {x}"
-    )
+        return st.sidebar.radio(
+            "",
+            ["Home", "Daily Report", "Earnings Report", "Logout"],
+            format_func=lambda x: f"{icons[x]} {x}"
+        )
 
-
+    # ADMIN MENU
     if user_type == "admin":
         return st.sidebar.radio(
             "",
             ["Dashboard", "Profit Reports", "Submissions", "Logout"],
             format_func=lambda x: f"{icons[x]} {x}"
         )
+
 
 # -------------------------------------------------------------------
 # DRIVER DAILY REPORT FORM
@@ -925,6 +926,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

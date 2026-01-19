@@ -212,6 +212,20 @@ def sidebar_menu(user_type):
             format_func=lambda x: f"{icons[x]} {x}"
         )
 
+def get_last_end_mileage(driver_name):
+    df = pd.DataFrame(daily_sheet.get_all_records())
+
+    if df.empty:
+        return 0
+
+    df = df[df["driver_name"] == driver_name]
+
+    if df.empty:
+        return 0
+
+    df = df.sort_values("date", ascending=False)
+    return int(df.iloc[0]["end_mileage"])
+
 # -------------------------------------------------------------------
 # DRIVER DAILY REPORT FORM
 # -------------------------------------------------------------------
@@ -219,19 +233,22 @@ def page_driver_form(driver):
 
 
 
-    fields = {
-        "report_date": date.today(),
-        "start": 0,
-        "end": 0,
-        "uber": 0,
-        "fare": 0.0,
-        "tip": 0.0,
-        "toll": 0.0,
-        "other": 0.0,
-        "cash": 0.0,
-        "calc_done": False,
-        "screenshot": None
-    }
+    # Get last end mileage automatically
+last_end_mileage = get_last_end_mileage(driver["driver_name"])
+
+fields = {
+    "report_date": date.today(),
+    "start": last_end_mileage,   # auto-filled
+    "end": 0,
+    "uber": 0,
+    "fare": 0.0,
+    "tip": 0.0,
+    "toll": 0.0,
+    "other": 0.0,
+    "cash": 0.0,
+    "calc_done": False,
+    "screenshot": None
+}
 
     # (rest of your existing form code continues here,
     # also indented with 4 spaces)
@@ -966,6 +983,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

@@ -597,6 +597,9 @@ def page_admin_dashboard():
     mask = (df["date"] >= pd.to_datetime(start_date)) & (df["date"] <= pd.to_datetime(end_date))
     filtered = df[mask]
 
+    st.caption(f"Showing data from {start_date} to {end_date}")
+
+
     trend_options = {
         "Daily Fare": "fare",
         "Driver Salary": "driver_salary",
@@ -625,22 +628,22 @@ def page_admin_dashboard():
     # --------------------------------------------------------------
 
     # ---------------------- ADMIN SUMMARY SECTION ----------------------
-    total_fare = df["fare"].sum()
-    total_salary = df["driver_salary"].sum()
-    total_daily_mileage = df["daily_mileage"].sum()
-    total_uber_mileage = df["uber_hire_mileage"].sum()
-    total_loss_mileage = df["loss_mileage"].sum()
+    total_fare = filtered["fare"].sum()
+    total_salary = filtered["driver_salary"].sum()
+    total_daily_mileage = filtered["daily_mileage"].sum()
+    total_uber_mileage = filtered["uber_hire_mileage"].sum()
+    total_loss_mileage = filtered["loss_mileage"].sum()
 
-    total_platform_fee = df["platform_fee"].sum()
+    total_platform_fee = filtered["platform_fee"].sum()
     total_vehicle_cost = total_daily_mileage * 15.37
     total_cost = total_salary + total_vehicle_cost + total_platform_fee
 
     net_profit = total_fare - total_cost
 
     cash_flow = (
-        df["amount_to_ceekay"].sum() +
-        df["bank_deposit"].sum() -
-        df["platform_fee"].sum()
+        filtered["amount_to_ceekay"].sum()
+        + filtered["bank_deposit"].sum()
+        - filtered["platform_fee"].sum()
     )
 
     col1, col2, col3 = st.columns(3)
@@ -1072,6 +1075,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

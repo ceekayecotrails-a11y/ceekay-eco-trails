@@ -234,9 +234,10 @@ def page_driver_form(driver):
     # Get last end mileage automatically
     last_end_mileage = get_last_end_mileage(driver["driver_name"])
 
+    # Default field values (EMPTY where needed)
     fields = {
         "report_date": date.today(),
-        "start": last_end_mileage,   # auto-filled
+        "start": last_end_mileage,
         "end": None,
         "uber": None,
         "fare": None,
@@ -260,55 +261,90 @@ def page_driver_form(driver):
             value=st.session_state.report_date
         )
 
+        # Start & End mileage
         col1, col2 = st.columns(2)
+
         st.session_state.start = col1.number_input(
             "Start Mileage *",
             min_value=0,
             value=st.session_state.start
         )
-        st.session_state.end = col2.number_input(
-            "End Mileage *",
-            min_value=0,
-            value=st.session_state.end
-        )
 
+        end_input = col2.text_input(
+            "End Mileage *",
+            value="" if st.session_state.end is None else str(st.session_state.end)
+        )
+        if end_input.strip() != "":
+            try:
+                st.session_state.end = float(end_input)
+            except ValueError:
+                st.error("Please enter a valid end mileage")
+
+        # Uber mileage (decimal allowed)
         uber_input = st.text_input(
             "Uber Hire Mileage * (example: 100.52)",
             value="" if st.session_state.uber is None else str(st.session_state.uber)
         )
-
         if uber_input.strip() != "":
             try:
                 st.session_state.uber = float(uber_input)
             except ValueError:
                 st.error("Please enter a valid number like 100.52")
 
-
-        st.session_state.fare = st.number_input(
+        # Fare
+        fare_input = st.text_input(
             "Fare (Rs.) *",
-            min_value=0.0,
-            value=st.session_state.fare
+            value="" if st.session_state.fare is None else str(st.session_state.fare)
         )
-        st.session_state.tip = st.number_input(
+        if fare_input.strip() != "":
+            try:
+                st.session_state.fare = float(fare_input)
+            except ValueError:
+                st.error("Please enter a valid fare")
+
+        # Tip
+        tip_input = st.text_input(
             "Tip (Rs.)",
-            min_value=0.0,
-            value=st.session_state.tip
+            value="" if st.session_state.tip is None else str(st.session_state.tip)
         )
-        st.session_state.toll = st.number_input(
+        if tip_input.strip() != "":
+            try:
+                st.session_state.tip = float(tip_input)
+            except ValueError:
+                st.error("Please enter a valid tip")
+
+        # Toll
+        toll_input = st.text_input(
             "Toll Fee (Rs.)",
-            min_value=0.0,
-            value=st.session_state.toll
+            value="" if st.session_state.toll is None else str(st.session_state.toll)
         )
-        st.session_state.other = st.number_input(
+        if toll_input.strip() != "":
+            try:
+                st.session_state.toll = float(toll_input)
+            except ValueError:
+                st.error("Please enter a valid toll amount")
+
+        # Other expenses
+        other_input = st.text_input(
             "Other Expenses (Rs.)",
-            min_value=0.0,
-            value=st.session_state.other
+            value="" if st.session_state.other is None else str(st.session_state.other)
         )
-        st.session_state.cash = st.number_input(
+        if other_input.strip() != "":
+            try:
+                st.session_state.other = float(other_input)
+            except ValueError:
+                st.error("Please enter a valid amount")
+
+        # Cash collected
+        cash_input = st.text_input(
             "Cash Collected (Rs.) *",
-            min_value=0.0,
-            value=st.session_state.cash
+            value="" if st.session_state.cash is None else str(st.session_state.cash)
         )
+        if cash_input.strip() != "":
+            try:
+                st.session_state.cash = float(cash_input)
+            except ValueError:
+                st.error("Please enter a valid cash amount")
 
         st.session_state.screenshot = st.file_uploader(
             "Upload Earnings Screenshot (PNG/JPG) *",
@@ -318,30 +354,39 @@ def page_driver_form(driver):
         calc_btn = st.form_submit_button("Refresh Calculations")
         submit_btn = st.form_submit_button("Submit Report")
 
+    # ---------------- Calculations ----------------
     if calc_btn:
         st.session_state.calc_done = True
 
     if st.session_state.calc_done:
 
-        start = st.session_state.start
-        end = st.session_state.end
-        fare = st.session_state.fare
-        tip = st.session_state.tip
-        toll = st.session_state.toll
-        uber = st.session_state.uber
-        cash = st.session_state.cash
+        if (
+            st.session_state.end is None
+            or st.session_state.uber is None
+            or st.session_state.fare is None
+            or st.session_state.cash is None
+        ):
+            st.warning("Please fill all required fields to calculate.")
+        else:
+            start = st.session_state.start
+            end = st.session_state.end
+            fare = st.session_state.fare
+            tip = st.session_state.tip or 0
+            toll = st.session_state.toll or 0
+            uber = st.session_state.uber
+            cash = st.session_state.cash
 
-        daily = max(0, end - start)
-        loss = daily - uber
-        salary = fare * 0.30
-        total_salary = salary + tip + toll
-        to_ceekay = cash - total_salary
+            daily = max(0, end - start)
+            loss = daily - uber
+            salary = fare * 0.30
+            total_salary = salary + tip + toll
+            to_ceekay = cash - total_salary
 
-        st.info(f"**Daily Mileage:** {daily} km")
-        st.warning(f"**Loss Mileage:** {loss} km")
-        st.success(f"**Driver Salary (30%): Rs. {salary:,.2f}**")
-        st.success(f"**Total Driver Salary: Rs. {total_salary:,.2f}**")
-        st.info(f"**Amount to Hand Over: Rs. {to_ceekay:,.2f}**")
+            st.info(f"**Daily Mileage:** {daily} km")
+            st.warning(f"**Loss Mileage:** {loss} km")
+            st.success(f"**Driver Salary (30%): Rs. {salary:,.2f}**")
+            st.success(f"**Total Driver Salary: Rs. {total_salary:,.2f}**")
+            st.info(f"**Amount to Hand Over: Rs. {to_ceekay:,.2f}**")
 
     if st.session_state.screenshot:
         st.image(
@@ -350,24 +395,21 @@ def page_driver_form(driver):
             use_column_width=True
         )
 
+    # ---------------- Submit ----------------
     if submit_btn:
 
-        if st.session_state.start == 0 or st.session_state.end == 0:
-            st.error("Mileage fields are required.")
+        if st.session_state.end is None:
+            st.error("End mileage is required.")
             return
-
-        if st.session_state.uber == 0:
+        if st.session_state.uber is None:
             st.error("Uber mileage is required.")
             return
-
-        if st.session_state.fare == 0:
+        if st.session_state.fare is None:
             st.error("Fare is required.")
             return
-
-        if st.session_state.cash == 0:
+        if st.session_state.cash is None:
             st.error("Cash collected is required.")
             return
-
         if not st.session_state.screenshot:
             st.error("Screenshot is required.")
             return
@@ -375,7 +417,7 @@ def page_driver_form(driver):
         daily = st.session_state.end - st.session_state.start
         loss = daily - st.session_state.uber
         salary = st.session_state.fare * 0.30
-        total_salary = salary + st.session_state.tip + st.session_state.toll
+        total_salary = salary + (st.session_state.tip or 0) + (st.session_state.toll or 0)
         to_ceekay = st.session_state.cash - total_salary
 
         new_row = [
@@ -389,9 +431,9 @@ def page_driver_form(driver):
             st.session_state.uber,
             loss,
             st.session_state.fare,
-            st.session_state.tip,
-            st.session_state.toll,
-            st.session_state.other,
+            st.session_state.tip or 0,
+            st.session_state.toll or 0,
+            st.session_state.other or 0,
             st.session_state.cash,
             0,
             salary,
@@ -405,7 +447,6 @@ def page_driver_form(driver):
         daily_sheet.append_row(new_row)
 
         st.success("Submitted successfully! Please wait for management approval.")
-
         st.session_state.clear()
         st.rerun()
 
@@ -1024,6 +1065,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

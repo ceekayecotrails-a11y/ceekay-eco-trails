@@ -272,16 +272,16 @@ def page_driver_form(driver):
             value=st.session_state.end
         )
 
-       uber_input = st.text_input(
-    "Uber Hire Mileage * (example: 100.52)",
-    value="" if st.session_state.uber is None else str(st.session_state.uber)
-)
+        uber_input = st.text_input(
+            "Uber Hire Mileage * (example: 100.52)",
+            value="" if st.session_state.uber is None else str(st.session_state.uber)
+        )
 
-if uber_input.strip() != "":
-    try:
-        st.session_state.uber = float(uber_input)
-    except ValueError:
-        st.error("Please enter a valid number like 100.52")
+        if uber_input.strip() != "":
+            try:
+                st.session_state.uber = float(uber_input)
+            except ValueError:
+                st.error("Please enter a valid number like 100.52")
 
 
         st.session_state.fare = st.number_input(
@@ -1024,6 +1024,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

@@ -231,47 +231,77 @@ def get_last_end_mileage(driver_name):
 # -------------------------------------------------------------------
 def page_driver_form(driver):
 
-
-
     # Get last end mileage automatically
-last_end_mileage = get_last_end_mileage(driver["driver_name"])
+    last_end_mileage = get_last_end_mileage(driver["driver_name"])
 
-fields = {
-    "report_date": date.today(),
-    "start": last_end_mileage,   # auto-filled
-    "end": 0,
-    "uber": 0,
-    "fare": 0.0,
-    "tip": 0.0,
-    "toll": 0.0,
-    "other": 0.0,
-    "cash": 0.0,
-    "calc_done": False,
-    "screenshot": None
-}
+    fields = {
+        "report_date": date.today(),
+        "start": last_end_mileage,   # auto-filled
+        "end": 0,
+        "uber": 0,
+        "fare": 0.0,
+        "tip": 0.0,
+        "toll": 0.0,
+        "other": 0.0,
+        "cash": 0.0,
+        "calc_done": False,
+        "screenshot": None
+    }
 
-    # (rest of your existing form code continues here,
-    # also indented with 4 spaces)
-
+    # Initialize session state safely
     for k, v in fields.items():
-        st.session_state.setdefault(k, v)
+        if k not in st.session_state:
+            st.session_state[k] = v
 
     with st.form("driver_daily_form", clear_on_submit=False):
 
         st.session_state.report_date = st.date_input(
-            "Select Date", value=st.session_state.report_date
+            "Select Date",
+            value=st.session_state.report_date
         )
 
         col1, col2 = st.columns(2)
-        st.session_state.start = col1.number_input("Start Mileage *", min_value=0, value=st.session_state.start)
-        st.session_state.end = col2.number_input("End Mileage *", min_value=0, value=st.session_state.end)
+        st.session_state.start = col1.number_input(
+            "Start Mileage *",
+            min_value=0,
+            value=st.session_state.start
+        )
+        st.session_state.end = col2.number_input(
+            "End Mileage *",
+            min_value=0,
+            value=st.session_state.end
+        )
 
-        st.session_state.uber = st.number_input("Uber Hire Mileage *", min_value=0, value=st.session_state.uber)
-        st.session_state.fare = st.number_input("Fare (Rs.) *", min_value=0.0, value=st.session_state.fare)
-        st.session_state.tip = st.number_input("Tip (Rs.)", min_value=0.0, value=st.session_state.tip)
-        st.session_state.toll = st.number_input("Toll Fee (Rs.)", min_value=0.0, value=st.session_state.toll)
-        st.session_state.other = st.number_input("Other Expenses (Rs.)", min_value=0.0, value=st.session_state.other)
-        st.session_state.cash = st.number_input("Cash Collected (Rs.) *", min_value=0.0, value=st.session_state.cash)
+        st.session_state.uber = st.number_input(
+            "Uber Hire Mileage *",
+            min_value=0,
+            value=st.session_state.uber
+        )
+        st.session_state.fare = st.number_input(
+            "Fare (Rs.) *",
+            min_value=0.0,
+            value=st.session_state.fare
+        )
+        st.session_state.tip = st.number_input(
+            "Tip (Rs.)",
+            min_value=0.0,
+            value=st.session_state.tip
+        )
+        st.session_state.toll = st.number_input(
+            "Toll Fee (Rs.)",
+            min_value=0.0,
+            value=st.session_state.toll
+        )
+        st.session_state.other = st.number_input(
+            "Other Expenses (Rs.)",
+            min_value=0.0,
+            value=st.session_state.other
+        )
+        st.session_state.cash = st.number_input(
+            "Cash Collected (Rs.) *",
+            min_value=0.0,
+            value=st.session_state.cash
+        )
 
         st.session_state.screenshot = st.file_uploader(
             "Upload Earnings Screenshot (PNG/JPG) *",
@@ -307,7 +337,11 @@ fields = {
         st.info(f"**Amount to Hand Over: Rs. {to_ceekay:,.2f}**")
 
     if st.session_state.screenshot:
-        st.image(st.session_state.screenshot, caption="Uploaded Screenshot", use_column_width=True)
+        st.image(
+            st.session_state.screenshot,
+            caption="Uploaded Screenshot",
+            use_column_width=True
+        )
 
     if submit_btn:
 
@@ -983,6 +1017,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

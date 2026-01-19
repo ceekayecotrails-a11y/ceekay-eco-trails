@@ -667,7 +667,6 @@ def page_admin_daily_profit():
     st.markdown("<h2>💰 Daily Profit Report</h2>", unsafe_allow_html=True)
 
     df = pd.DataFrame(daily_sheet.get_all_records())
-    page_admin_daily_profit
 
     numeric_cols = [
         "fare", "driver_salary", "toll_fee", "other_expenses",
@@ -1075,6 +1074,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

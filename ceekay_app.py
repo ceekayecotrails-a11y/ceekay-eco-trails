@@ -237,13 +237,13 @@ def page_driver_form(driver):
     fields = {
         "report_date": date.today(),
         "start": last_end_mileage,   # auto-filled
-        "end": 0,
-        "uber": 0,
-        "fare": 0.0,
-        "tip": 0.0,
-        "toll": 0.0,
-        "other": 0.0,
-        "cash": 0.0,
+        "end": None,
+        "uber": None,
+        "fare": None,
+        "tip": None,
+        "toll": None,
+        "other": None,
+        "cash": None,
         "calc_done": False,
         "screenshot": None
     }
@@ -1024,6 +1024,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

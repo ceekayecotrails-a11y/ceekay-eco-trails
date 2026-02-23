@@ -420,6 +420,12 @@ def page_driver_form(driver):
         total_salary = salary + (st.session_state.tip or 0) + (st.session_state.toll or 0)
         to_ceekay = st.session_state.cash - total_salary
 
+
+        # Upload screenshot to Google Drive
+screenshot_url = upload_to_drive(
+    st.session_state.screenshot,
+    f"{driver['driver_name']}_{st.session_state.report_date}.png"
+)
         new_row = [
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             st.session_state.report_date.strftime("%Y-%m-%d"),
@@ -1074,6 +1080,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

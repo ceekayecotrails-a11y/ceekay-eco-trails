@@ -447,7 +447,7 @@ def page_driver_form(driver):
             to_ceekay,
             "Pending",
             "",
-            "",
+            screenshot_url,
         ]
 
         daily_sheet.append_row(new_row)
@@ -1080,6 +1080,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

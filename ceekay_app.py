@@ -40,7 +40,7 @@ dark_css = """
 footer {visibility: hidden;}
 
 [data-testid="stSidebar"] {
-    background-color: #0f2f1f;
+    background-color: ##0f2f1f;
 }
 
 .sidebar-icons {
@@ -1017,4 +1017,5 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 

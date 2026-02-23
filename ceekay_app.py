@@ -4,8 +4,6 @@ import plotly.express as px
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime, date
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
 import io
 import matplotlib.pyplot as plt
 
@@ -107,10 +105,9 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(
 client = gspread.authorize(creds)
 
 # Google Drive client
-drive_service = build('drive', 'v3', credentials=creds)
 
-# Your screenshot folder ID
-SCREENSHOT_FOLDER_ID = "1murQmj4VE_4C5o14qMDc825Zgrv-ha19"
+
+
 
 file = client.open("CEEKAY_Driver_Reports")
 drivers_sheet = file.worksheet("drivers")
@@ -360,10 +357,6 @@ def page_driver_form(driver):
             except ValueError:
                 st.error("Please enter a valid cash amount")
 
-        st.session_state.screenshot = st.file_uploader(
-            "Upload Earnings Screenshot (PNG/JPG) *",
-            type=["png", "jpg", "jpeg"]
-        )
 
         calc_btn = st.form_submit_button("Refresh Calculations")
         submit_btn = st.form_submit_button("Submit Report")
@@ -424,9 +417,6 @@ def page_driver_form(driver):
         if st.session_state.cash is None:
             st.error("Cash collected is required.")
             return
-        if not st.session_state.screenshot:
-            st.error("Screenshot is required.")
-            return
 
         daily = st.session_state.end - st.session_state.start
         loss = daily - st.session_state.uber
@@ -436,7 +426,7 @@ def page_driver_form(driver):
 
 
         # Upload screenshot to Google Drive
-        screenshot_url = upload_to_drive(
+        
             st.session_state.screenshot,
             f"{driver['driver_name']}_{st.session_state.report_date}.png"
         )
@@ -461,7 +451,7 @@ def page_driver_form(driver):
             to_ceekay,
             "Pending",
             "",
-            screenshot_url,
+            "",
         ]
 
         daily_sheet.append_row(new_row)
@@ -928,12 +918,6 @@ def page_admin_submissions():
     st.write(f"Cash Collected: **Rs. {num(row['cash_collected']):,.2f}**")
     st.write(f"Amount to CEEKAY: **Rs. {num(row['amount_to_ceekay']):,.2f}**")
 
-    st.write("### Screenshot")
-    ss = row.get("screenshot_url", "")
-    if ss:
-        st.image(ss)
-    else:
-        st.info("No screenshot uploaded")
 
     st.write("### Current Status")
     st.write(f"Status: **{row['status']}**")
@@ -1094,6 +1078,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

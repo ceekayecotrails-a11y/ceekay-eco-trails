@@ -422,10 +422,10 @@ def page_driver_form(driver):
 
 
         # Upload screenshot to Google Drive
-screenshot_url = upload_to_drive(
-    st.session_state.screenshot,
-    f"{driver['driver_name']}_{st.session_state.report_date}.png"
-)
+        screenshot_url = upload_to_drive(
+            st.session_state.screenshot,
+            f"{driver['driver_name']}_{st.session_state.report_date}.png"
+        )
         new_row = [
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             st.session_state.report_date.strftime("%Y-%m-%d"),

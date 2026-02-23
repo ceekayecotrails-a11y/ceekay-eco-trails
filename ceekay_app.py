@@ -91,9 +91,11 @@ st.markdown(dark_css, unsafe_allow_html=True)
 # -------------------------------------------------------------------
 # GOOGLE SHEET CONNECTION (SAFE VERSION)
 # -------------------------------------------------------------------
+
 scope = [
-    "https://spreadsheets.google.com/feeds",
-    "https://www.googleapis.com/auth/drive"
+    "https://www.googleapis.com/auth/drive",
+    "https://www.googleapis.com/auth/drive.file",
+    "https://www.googleapis.com/auth/spreadsheets"
 ]
 
 # 🔒 Load credentials from Streamlit Secrets (not from file)
@@ -1085,6 +1087,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

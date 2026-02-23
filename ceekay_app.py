@@ -155,20 +155,20 @@ def upload_to_drive(file, filename):
 
     from googleapiclient.errors import HttpError
 
-try:
-    uploaded_file = (
-        drive.files()
-        .create(
-            body=file_metadata,
-            media_body=media,
-            fields="id",
-            supportsAllDrives=True
+    try:
+        uploaded_file = (
+            drive.files()
+            .create(
+                body=file_metadata,
+                media_body=media,
+                fields="id",
+                supportsAllDrives=True
+            )
+            .execute()
         )
-        .execute()
-    )
-except HttpError as error:
-    st.error(f"Drive Upload Error: {error}")
-    raise
+    except HttpError as error:
+        st.error(f"Drive Upload Error: {error}")
+        raise
 
     drive.permissions().create(
         fileId=file_id,
@@ -1094,6 +1094,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

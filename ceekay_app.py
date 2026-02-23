@@ -152,17 +152,20 @@ def upload_to_drive(file, filename):
 
     uploaded_file = (
         drive.files()
-        .create(body=file_metadata, media_body=media, fields="id")
+        .create(
+            body=file_metadata,
+            media_body=media,
+            fields="id",
+            supportsAllDrives=True
+        )
         .execute()
     )
 
-    file_id = uploaded_file.get("id")
-
     drive.permissions().create(
         fileId=file_id,
-        body={"role": "reader", "type": "anyone"}
+        body={"role": "reader", "type": "anyone"},
+        supportsAllDrives=True
     ).execute()
-
     return f"https://drive.google.com/uc?id={file_id}"
 
 # -------------------------------------------------------------------
@@ -1082,6 +1085,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

@@ -4,8 +4,6 @@ import plotly.express as px
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime, date
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
 import io
 import matplotlib.pyplot as plt
 
@@ -42,7 +40,7 @@ dark_css = """
 footer {visibility: hidden;}
 
 [data-testid="stSidebar"] {
-    background-color: ##0f2f1f;
+    background-color: #0f2f1f;
 }
 
 .sidebar-icons {
@@ -104,11 +102,8 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(
 
 client = gspread.authorize(creds)
 
-# Google Drive client
-drive_service = build('drive', 'v3', credentials=creds)
 
-# Your screenshot folder ID
-SCREENSHOT_FOLDER_ID = "1iuoSZvJXOWstZS4q_Wz4KCjoZbbXqDYB"
+
 
 file = client.open("CEEKAY_Driver_Reports")
 drivers_sheet = file.worksheet("drivers")
@@ -127,41 +122,7 @@ def check_driver_status(driver_name):
     last = df.iloc[-1]["status"]
     return last
 
-# -------------------------------------------------------------------
-# UPLOAD FILE TO GOOGLE DRIVE
-# -------------------------------------------------------------------
-def upload_to_drive(file, filename):
-    from googleapiclient.http import MediaIoBaseUpload
 
-    FOLDER_ID = "1IJWmZ4mhIAo6r83S9nHwjYAe9FR1XpP3"
-
-    file_metadata = {
-        "name": filename,
-        "parents": [FOLDER_ID],
-    }
-
-    media = MediaIoBaseUpload(
-        file,
-        mimetype=file.type,
-        resumable=True
-    )
-
-    drive = build("drive", "v3", credentials=creds)
-
-    uploaded_file = (
-        drive.files()
-        .create(body=file_metadata, media_body=media, fields="id")
-        .execute()
-    )
-
-    file_id = uploaded_file.get("id")
-
-    drive.permissions().create(
-        fileId=file_id,
-        body={"role": "reader", "type": "anyone"}
-    ).execute()
-
-    return f"https://drive.google.com/uc?id={file_id}"
 
 # -------------------------------------------------------------------
 # LOGIN SYSTEM
@@ -246,7 +207,6 @@ def page_driver_form(driver):
         "other": None,
         "cash": None,
         "calc_done": False,
-        "screenshot": None
     }
 
     # Initialize session state safely
@@ -346,10 +306,6 @@ def page_driver_form(driver):
             except ValueError:
                 st.error("Please enter a valid cash amount")
 
-        st.session_state.screenshot = st.file_uploader(
-            "Upload Earnings Screenshot (PNG/JPG) *",
-            type=["png", "jpg", "jpeg"]
-        )
 
         calc_btn = st.form_submit_button("Refresh Calculations")
         submit_btn = st.form_submit_button("Submit Report")
@@ -388,12 +344,7 @@ def page_driver_form(driver):
             st.success(f"**Total Driver Salary: Rs. {total_salary:,.2f}**")
             st.info(f"**Amount to Hand Over: Rs. {to_ceekay:,.2f}**")
 
-    if st.session_state.screenshot:
-        st.image(
-            st.session_state.screenshot,
-            caption="Uploaded Screenshot",
-            use_column_width=True
-        )
+
 
     # ---------------- Submit ----------------
     if submit_btn:
@@ -410,9 +361,7 @@ def page_driver_form(driver):
         if st.session_state.cash is None:
             st.error("Cash collected is required.")
             return
-        if not st.session_state.screenshot:
-            st.error("Screenshot is required.")
-            return
+
 
         daily = st.session_state.end - st.session_state.start
         loss = daily - st.session_state.uber
@@ -908,12 +857,6 @@ def page_admin_submissions():
     st.write(f"Cash Collected: **Rs. {num(row['cash_collected']):,.2f}**")
     st.write(f"Amount to CEEKAY: **Rs. {num(row['amount_to_ceekay']):,.2f}**")
 
-    st.write("### Screenshot")
-    ss = row.get("screenshot_url", "")
-    if ss:
-        st.image(ss)
-    else:
-        st.info("No screenshot uploaded")
 
     st.write("### Current Status")
     st.write(f"Status: **{row['status']}**")
@@ -1074,3 +1017,4 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+

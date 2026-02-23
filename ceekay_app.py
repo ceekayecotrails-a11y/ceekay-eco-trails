@@ -140,10 +140,12 @@ def upload_to_drive(file, filename):
         "parents": [FOLDER_ID],
     }
 
+    file_bytes = io.BytesIO(file.read())
+
     media = MediaIoBaseUpload(
-        file,
-        mimetype=file.type,
-        resumable=True
+        file_bytes,
+        mimetype=file.type if hasattr(file, "type") else "image/png",
+        resumable=False
     )
 
     drive = build("drive", "v3", credentials=creds)
@@ -1080,6 +1082,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

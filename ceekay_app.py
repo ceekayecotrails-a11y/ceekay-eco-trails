@@ -831,6 +831,7 @@ def page_vehicle_report():
 
     # ---------------- Variable Costs ----------------
     df_variable = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+    df_variable["amount"] = pd.to_numeric(df_variable["amount"], errors="coerce").fillna(0)
     df_variable = df_variable[df_variable["vehicle_no"] == selected_vehicle]
 
     if not df_variable.empty:
@@ -883,6 +884,26 @@ def page_vehicle_report():
         st.dataframe(df_variable)
     else:
         st.info("No expenses recorded for this vehicle.")
+
+    
+
+
+    # 🔥 ADD STEP 4 HERE
+    st.markdown("---")
+    st.subheader("📊 Expense Distribution")
+
+    if not df_variable.empty:
+
+        expense_summary = df_variable.groupby("category")["amount"].sum().reset_index()
+
+        fig = px.pie(
+            expense_summary,
+            names="category",
+            values="amount",
+            title="Expense Breakdown by Category"
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
 
 
 
@@ -1197,6 +1218,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

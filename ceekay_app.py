@@ -873,16 +873,18 @@ def page_vehicle_report():
     st.write(f"Running Cost (Mileage): Rs. {vehicle_running_cost:,.2f}")
     st.write(f"Variable Repairs: Rs. {total_variable:,.2f}")
     st.write(f"Monthly Depreciation: Rs. {monthly_depreciation:,.2f}")
+    
+    st.markdown("---")
+    st.subheader("💰 Expense Details")
 
-st.markdown("---")
-st.subheader("💰 Expense Details")
+    if not df_variable.empty:
+        df_variable["amount"] = pd.to_numeric(df_variable["amount"], errors="coerce").fillna(0)
+        df_variable = df_variable.sort_values("date", ascending=False)
+        st.dataframe(df_variable)
+    else:
+        st.info("No expenses recorded for this vehicle.")
 
-if not df_variable.empty:
-    df_variable["amount"] = pd.to_numeric(df_variable["amount"], errors="coerce").fillna(0)
-    df_variable = df_variable.sort_values("date", ascending=False)
-    st.dataframe(df_variable)
-else:
-    st.info("No expenses recorded for this vehicle.")
+
 
 # -------------------------------------------------------------------
 # SAFE NUMBER CONVERTER
@@ -1177,6 +1179,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

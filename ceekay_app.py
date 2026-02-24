@@ -173,7 +173,7 @@ def sidebar_menu(user_type):
     if user_type == "admin":
         return st.sidebar.radio(
             "",
-            ["Dashboard", "Profit Reports", "Vehicle Report", "Submissions", "Logout"]
+            ["Dashboard", "Profit Reports", "Vehicle Report", "Submissions", "Logout"],
             format_func=lambda x: f"{icons[x]} {x}"
         )
 
@@ -1110,6 +1110,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

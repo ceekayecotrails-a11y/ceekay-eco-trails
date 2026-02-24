@@ -1101,7 +1101,7 @@ if st.session_state.get("page") == "admin":
         page_profit_reports()
 
     elif page == "Vehicle Report":
-    page_vehicle_report()
+        page_vehicle_report()
 
     elif page == "Submissions":
         page_admin_submissions()
@@ -1110,6 +1110,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

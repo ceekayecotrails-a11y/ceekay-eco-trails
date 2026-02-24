@@ -109,7 +109,6 @@ file = client.open("CEEKAY_Driver_Reports")
 drivers_sheet = file.worksheet("drivers")
 daily_sheet = file.worksheet("daily_reports")
 vehicle_master_sheet = file.worksheet("vehicle_master")
-vehicle_fixed_sheet = file.worksheet("vehicle_fixed_costs")
 vehicle_variable_sheet = file.worksheet("vehicle_variable_costs")
 
 drivers_df = pd.DataFrame(drivers_sheet.get_all_records())
@@ -840,16 +839,6 @@ def page_vehicle_report():
     else:
         total_variable = 0
 
-    # ---------------- Fixed Costs ----------------
-    df_fixed = pd.DataFrame(vehicle_fixed_sheet.get_all_records())
-    df_fixed = df_fixed[df_fixed["vehicle_no"] == selected_vehicle]
-
-    if not df_fixed.empty:
-        df_fixed["monthly_amount"] = pd.to_numeric(df_fixed["monthly_amount"], errors="coerce").fillna(0)
-        total_fixed = df_fixed["monthly_amount"].sum()
-    else:
-        total_fixed = 0
-
     # ---------------- Depreciation ----------------
     df_master = pd.DataFrame(vehicle_master_sheet.get_all_records())
     df_master = df_master[df_master["vehicle_no"] == selected_vehicle]
@@ -866,7 +855,6 @@ def page_vehicle_report():
         total_driver_salary
         + vehicle_running_cost
         + total_variable
-        + total_fixed
         + total_platform_fee
         + monthly_depreciation
     )
@@ -884,7 +872,6 @@ def page_vehicle_report():
     st.write(f"Platform Fee: Rs. {total_platform_fee:,.2f}")
     st.write(f"Running Cost (Mileage): Rs. {vehicle_running_cost:,.2f}")
     st.write(f"Variable Repairs: Rs. {total_variable:,.2f}")
-    st.write(f"Fixed Monthly Costs: Rs. {total_fixed:,.2f}")
     st.write(f"Monthly Depreciation: Rs. {monthly_depreciation:,.2f}")
 
 # -------------------------------------------------------------------
@@ -900,12 +887,12 @@ def page_vehicle_entry():
 
     st.markdown("<h2>🛠 Vehicle Management</h2>", unsafe_allow_html=True)
 
-    tab1, tab2, tab3 = st.tabs([
+    tab1, tab2 = st.tabs([
         "➕ Add Vehicle",
-        "🔧 Add Repair / Expense",
-        "📅 Add Fixed Monthly Cost"
+        "💰 Add Expense"
     ])
 
+   
     # ------------------------------------------------
     # TAB 1 — ADD VEHICLE
     # ------------------------------------------------
@@ -961,33 +948,6 @@ def page_vehicle_entry():
 
                 st.success("Expense recorded!")
 
-    # ------------------------------------------------
-    # TAB 3 — FIXED COST
-    # ------------------------------------------------
-    with tab3:
-
-        st.subheader("Add Monthly Fixed Cost")
-
-        vehicles = drivers_df["vehicle_no"].unique().tolist()
-
-        if not vehicles:
-            st.warning("No vehicles available")
-        else:
-
-            selected_vehicle = st.selectbox("Vehicle", vehicles, key="fixed_vehicle")
-
-            description = st.text_input("Description", key="fixed_desc")
-            monthly_amount = st.number_input("Monthly Amount (Rs.)", min_value=0.0)
-
-            if st.button("Save Fixed Cost"):
-
-                vehicle_fixed_sheet.append_row([
-                    selected_vehicle,
-                    description,
-                    monthly_amount
-                ])
-
-                st.success("Fixed cost saved!")
 
 # -------------------------------------------------------------------
 # ADMIN SUBMISSIONS PAGE
@@ -1207,6 +1167,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

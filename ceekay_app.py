@@ -108,6 +108,9 @@ client = gspread.authorize(creds)
 file = client.open("CEEKAY_Driver_Reports")
 drivers_sheet = file.worksheet("drivers")
 daily_sheet = file.worksheet("daily_reports")
+vehicle_master_sheet = file.worksheet("vehicle_master")
+vehicle_fixed_sheet = file.worksheet("vehicle_fixed_costs")
+vehicle_variable_sheet = file.worksheet("vehicle_variable_costs")
 
 drivers_df = pd.DataFrame(drivers_sheet.get_all_records())
 
@@ -154,6 +157,7 @@ def sidebar_menu(user_type):
         "Dashboard": "📊",
         "Profit Reports": "📈",
         "Submissions": "📁",
+        "Vehicle Report": "🚗",
         "Logout": "🚪"
     }
 
@@ -169,7 +173,7 @@ def sidebar_menu(user_type):
     if user_type == "admin":
         return st.sidebar.radio(
             "",
-            ["Dashboard", "Profit Reports", "Submissions", "Logout"],
+            ["Dashboard", "Profit Reports", "Vehicle Report", "Submissions", "Logout"]
             format_func=lambda x: f"{icons[x]} {x}"
         )
 
@@ -796,6 +800,92 @@ def page_profit_reports():
     elif mode == "Monthly Profit":
         page_admin_monthly_profit()
 
+def page_vehicle_report():
+
+    st.markdown("<h2>🚗 Vehicle Financial Report</h2>", unsafe_allow_html=True)
+
+    vehicles = drivers_df["vehicle_no"].unique().tolist()
+    selected_vehicle = st.selectbox("Select Vehicle", vehicles)
+
+    # ---------------- Revenue Data ----------------
+    df_reports = pd.DataFrame(daily_sheet.get_all_records())
+    df_reports = df_reports[
+        (df_reports["vehicle_no"] == selected_vehicle) &
+        (df_reports["status"] == "Correct")
+    ]
+
+    if df_reports.empty:
+        st.warning("No revenue data available.")
+        return
+
+    numeric_cols = ["fare", "driver_salary", "daily_mileage", "platform_fee"]
+    for col in numeric_cols:
+        df_reports[col] = pd.to_numeric(df_reports[col], errors="coerce").fillna(0)
+
+    total_revenue = df_reports["fare"].sum()
+    total_driver_salary = df_reports["driver_salary"].sum()
+    total_platform_fee = df_reports["platform_fee"].sum()
+
+    total_mileage = df_reports["daily_mileage"].sum()
+    vehicle_running_cost = total_mileage * 15.37
+
+    # ---------------- Variable Costs ----------------
+    df_variable = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+    df_variable = df_variable[df_variable["vehicle_no"] == selected_vehicle]
+
+    if not df_variable.empty:
+        df_variable["amount"] = pd.to_numeric(df_variable["amount"], errors="coerce").fillna(0)
+        total_variable = df_variable["amount"].sum()
+    else:
+        total_variable = 0
+
+    # ---------------- Fixed Costs ----------------
+    df_fixed = pd.DataFrame(vehicle_fixed_sheet.get_all_records())
+    df_fixed = df_fixed[df_fixed["vehicle_no"] == selected_vehicle]
+
+    if not df_fixed.empty:
+        df_fixed["monthly_amount"] = pd.to_numeric(df_fixed["monthly_amount"], errors="coerce").fillna(0)
+        total_fixed = df_fixed["monthly_amount"].sum()
+    else:
+        total_fixed = 0
+
+    # ---------------- Depreciation ----------------
+    df_master = pd.DataFrame(vehicle_master_sheet.get_all_records())
+    df_master = df_master[df_master["vehicle_no"] == selected_vehicle]
+
+    if not df_master.empty:
+        purchase_cost = float(df_master.iloc[0]["purchase_cost"])
+        useful_years = float(df_master.iloc[0]["useful_years"])
+        monthly_depreciation = purchase_cost / (useful_years * 12)
+    else:
+        monthly_depreciation = 0
+
+    # ---------------- Final Calculation ----------------
+    total_cost = (
+        total_driver_salary
+        + vehicle_running_cost
+        + total_variable
+        + total_fixed
+        + total_platform_fee
+        + monthly_depreciation
+    )
+
+    net_profit = total_revenue - total_cost
+
+    # ---------------- Display ----------------
+    st.metric("Total Revenue", f"Rs. {total_revenue:,.2f}")
+    st.metric("Total Cost", f"Rs. {total_cost:,.2f}")
+    st.metric("Net Profit", f"Rs. {net_profit:,.2f}")
+
+    st.markdown("---")
+    st.write("### Cost Breakdown")
+    st.write(f"Driver Salary: Rs. {total_driver_salary:,.2f}")
+    st.write(f"Platform Fee: Rs. {total_platform_fee:,.2f}")
+    st.write(f"Running Cost (Mileage): Rs. {vehicle_running_cost:,.2f}")
+    st.write(f"Variable Repairs: Rs. {total_variable:,.2f}")
+    st.write(f"Fixed Monthly Costs: Rs. {total_fixed:,.2f}")
+    st.write(f"Monthly Depreciation: Rs. {monthly_depreciation:,.2f}")
+
 # -------------------------------------------------------------------
 # SAFE NUMBER CONVERTER
 # -------------------------------------------------------------------
@@ -1010,6 +1100,9 @@ if st.session_state.get("page") == "admin":
     elif page == "Profit Reports":
         page_profit_reports()
 
+    elif page == "Vehicle Report":
+    page_vehicle_report()
+
     elif page == "Submissions":
         page_admin_submissions()
 
@@ -1017,5 +1110,6 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 

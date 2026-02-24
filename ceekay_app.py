@@ -946,17 +946,35 @@ def page_vehicle_entry():
             selected_vehicle = st.selectbox("Select Vehicle", vehicles)
 
             expense_date = st.date_input("Expense Date")
+
+            expense_categories = [
+                "Fuel",
+                "Leasing",
+                "Insurance",
+                "Repair",
+                "Tyre",
+                "Battery",
+                "Service",
+                "License",
+                "GPS",
+                "Other"
+            ]
+
+            category = st.selectbox("Expense Category", expense_categories)
+
             description = st.text_input("Description")
             amount = st.number_input("Amount (Rs.)", min_value=0.0)
+
 
             if st.button("Save Variable Expense"):
 
                 vehicle_variable_sheet.append_row([
                     expense_date.strftime("%Y-%m-%d"),
                     selected_vehicle,
+                    category,
                     description,
                     amount
-                ])
+             ])
 
                 st.success("Expense recorded!")
 
@@ -1179,6 +1197,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

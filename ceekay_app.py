@@ -157,6 +157,7 @@ def sidebar_menu(user_type):
         "Dashboard": "📊",
         "Profit Reports": "📈",
         "Submissions": "📁",
+        "Vehicle Entry": "🛠",
         "Vehicle Report": "🚗",
         "Logout": "🚪"
     }
@@ -173,7 +174,7 @@ def sidebar_menu(user_type):
     if user_type == "admin":
         return st.sidebar.radio(
             "",
-            ["Dashboard", "Profit Reports", "Vehicle Report", "Submissions", "Logout"],
+            ["Dashboard", "Profit Reports", "Vehicle Entry", "Vehicle Report", "Submissions", "Logout"],
             format_func=lambda x: f"{icons[x]} {x}"
         )
 
@@ -895,6 +896,99 @@ def num(v):
     except:
         return 0.0
 
+def page_vehicle_entry():
+
+    st.markdown("<h2>🛠 Vehicle Management</h2>", unsafe_allow_html=True)
+
+    tab1, tab2, tab3 = st.tabs([
+        "➕ Add Vehicle",
+        "🔧 Add Repair / Expense",
+        "📅 Add Fixed Monthly Cost"
+    ])
+
+    # ------------------------------------------------
+    # TAB 1 — ADD VEHICLE
+    # ------------------------------------------------
+    with tab1:
+
+        st.subheader("Register New Vehicle")
+
+        vehicle_no = st.text_input("Vehicle Number")
+        purchase_date = st.date_input("Purchase Date")
+        purchase_cost = st.number_input("Purchase Cost (Rs.)", min_value=0.0)
+        useful_years = st.number_input("Useful Life (Years)", min_value=1.0, value=5.0)
+
+        if st.button("Save Vehicle"):
+
+            if vehicle_no == "":
+                st.error("Vehicle number required")
+            else:
+                vehicle_master_sheet.append_row([
+                    vehicle_no,
+                    purchase_date.strftime("%Y-%m-%d"),
+                    purchase_cost,
+                    useful_years
+                ])
+                st.success("Vehicle added successfully!")
+
+    # ------------------------------------------------
+    # TAB 2 — VARIABLE COST
+    # ------------------------------------------------
+    with tab2:
+
+        st.subheader("Add Repair / Variable Expense")
+
+        vehicles = drivers_df["vehicle_no"].unique().tolist()
+
+        if not vehicles:
+            st.warning("No vehicles available")
+        else:
+
+            selected_vehicle = st.selectbox("Select Vehicle", vehicles)
+
+            expense_date = st.date_input("Expense Date")
+            description = st.text_input("Description")
+            amount = st.number_input("Amount (Rs.)", min_value=0.0)
+
+            if st.button("Save Variable Expense"):
+
+                vehicle_variable_sheet.append_row([
+                    expense_date.strftime("%Y-%m-%d"),
+                    selected_vehicle,
+                    description,
+                    amount
+                ])
+
+                st.success("Expense recorded!")
+
+    # ------------------------------------------------
+    # TAB 3 — FIXED COST
+    # ------------------------------------------------
+    with tab3:
+
+        st.subheader("Add Monthly Fixed Cost")
+
+        vehicles = drivers_df["vehicle_no"].unique().tolist()
+
+        if not vehicles:
+            st.warning("No vehicles available")
+        else:
+
+            selected_vehicle = st.selectbox("Vehicle", vehicles, key="fixed_vehicle")
+
+            description = st.text_input("Description", key="fixed_desc")
+            monthly_amount = st.number_input("Monthly Amount (Rs.)", min_value=0.0)
+
+            if st.button("Save Fixed Cost"):
+
+                vehicle_fixed_sheet.append_row([
+                    selected_vehicle,
+                    description,
+                    monthly_amount
+                ])
+
+                st.success("Fixed cost saved!")
+
 # -------------------------------------------------------------------
 # ADMIN SUBMISSIONS PAGE
 # -------------------------------------------------------------------
@@ -1100,6 +1194,9 @@ if st.session_state.get("page") == "admin":
     elif page == "Profit Reports":
         page_profit_reports()
 
+    elif page == "Vehicle Entry":
+        page_vehicle_entry()
+
     elif page == "Vehicle Report":
         page_vehicle_report()
 
@@ -1110,6 +1207,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

@@ -517,99 +517,132 @@ def page_earnings_report(user_type, driver=None):
 # -------------------------------------------------------------------
 def page_admin_dashboard():
 
-    st.markdown("<h2>📊 Admin Dashboard</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>📊 CEEKAY Executive Dashboard</h2>", unsafe_allow_html=True)
 
     df = pd.DataFrame(daily_sheet.get_all_records())
     df = df[df["status"] == "Correct"]
-
 
     if df.empty:
         st.warning("No data available.")
         return
 
-    # Convert numeric values
+    # Convert numeric columns safely
     numeric_cols = [
-        "fare", "driver_salary", "toll_fee", "other_expenses",
-        "daily_mileage", "uber_hire_mileage", "loss_mileage",
-        "platform_fee", "amount_to_ceekay", "bank_deposit", "cash_collected"
+        "fare", "driver_salary", "platform_fee",
+        "daily_mileage", "uber_hire_mileage",
+        "loss_mileage", "amount_to_ceekay",
+        "bank_deposit"
     ]
+
     for col in numeric_cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
 
-    # Convert date
     df["date"] = pd.to_datetime(df["date"])
 
-    # ---------------------- ADVANCED TREND CHART ----------------------
-    st.subheader("📊 Trend Analytics")
-
+    # Date Filter
     col1, col2 = st.columns(2)
     start_date = col1.date_input("From Date", df["date"].min())
     end_date = col2.date_input("To Date", df["date"].max())
 
-    mask = (df["date"] >= pd.to_datetime(start_date)) & (df["date"] <= pd.to_datetime(end_date))
-    filtered = df[mask]
+    df = df[
+        (df["date"] >= pd.to_datetime(start_date)) &
+        (df["date"] <= pd.to_datetime(end_date))
+    ]
 
-    st.caption(f"Showing data from {start_date} to {end_date}")
+    # Tabs Layout
+    tab1, tab2, tab3 = st.tabs([
+        "📊 Overview",
+        "🚗 Vehicle Performance",
+        "💰 Expense Insights"
+    ])
 
+    # =====================================================
+    # TAB 1 — BUSINESS OVERVIEW
+    # =====================================================
+    with tab1:
 
-    trend_options = {
-        "Daily Fare": "fare",
-        "Driver Salary": "driver_salary",
-        "Total Mileage": "daily_mileage",
-        "Uber Mileage": "uber_hire_mileage",
-        "Loss Mileage": "loss_mileage",
-        "Cash Collected": "cash_collected",
-        "Amount to CEEKAY": "amount_to_ceekay"
-    }
+        total_revenue = df["fare"].sum()
+        total_salary = df["driver_salary"].sum()
+        total_platform = df["platform_fee"].sum()
+        total_mileage = df["daily_mileage"].sum()
 
-    selected_trend = st.selectbox("Select Trend to View:", list(trend_options.keys()))
-    y_column = trend_options[selected_trend]
+        running_cost = total_mileage * 15.37
+        total_cost = total_salary + total_platform + running_cost
+        net_profit = total_revenue - total_cost
 
-    daily_data = filtered.groupby(filtered["date"].dt.date)[y_column].sum().reset_index()
-    daily_data.columns = ["date", "value"]
+        if total_mileage > 0:
+            profit_per_km = net_profit / total_mileage
+        else:
+            profit_per_km = 0
 
-    fig = px.line(
-        daily_data,
-        x="date",
-        y="value",
-        title=f"{selected_trend} Trend",
-        markers=True
-    )
-    st.plotly_chart(fig, use_container_width=True)
-    st.markdown("---")
-    # --------------------------------------------------------------
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Total Revenue", f"Rs. {total_revenue:,.0f}")
+        col2.metric("Total Cost", f"Rs. {total_cost:,.0f}")
+        col3.metric("Net Profit", f"Rs. {net_profit:,.0f}")
+        col4.metric("Profit per KM", f"Rs. {profit_per_km:,.2f}")
 
-    # ---------------------- ADMIN SUMMARY SECTION ----------------------
-    total_fare = filtered["fare"].sum()
-    total_salary = filtered["driver_salary"].sum()
-    total_daily_mileage = filtered["daily_mileage"].sum()
-    total_uber_mileage = filtered["uber_hire_mileage"].sum()
-    total_loss_mileage = filtered["loss_mileage"].sum()
+        st.markdown("---")
 
-    total_platform_fee = filtered["platform_fee"].sum()
-    total_vehicle_cost = total_daily_mileage * 15.37
-    total_cost = total_salary + total_vehicle_cost + total_platform_fee
+        daily_trend = df.groupby(df["date"].dt.date)["fare"].sum().reset_index()
+        fig = px.line(daily_trend, x="date", y="fare", title="Revenue Trend", markers=True)
+        st.plotly_chart(fig, use_container_width=True)
 
-    net_profit = total_fare - total_cost
+    # =====================================================
+    # TAB 2 — VEHICLE PERFORMANCE
+    # =====================================================
+    with tab2:
 
-    cash_flow = (
-        filtered["amount_to_ceekay"].sum()
-        + filtered["bank_deposit"].sum()
-        - filtered["platform_fee"].sum()
-    )
+        vehicle_summary = df.groupby("vehicle_no").agg({
+            "fare": "sum",
+            "driver_salary": "sum",
+            "platform_fee": "sum",
+            "daily_mileage": "sum"
+        }).reset_index()
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Fare", f"Rs. {total_fare:,.2f}")
-    col2.metric("Total Cost", f"Rs. {total_cost:,.2f}")
-    col3.metric("Net Earnings", f"Rs. {net_profit:,.2f}")
+        vehicle_summary["running_cost"] = vehicle_summary["daily_mileage"] * 15.37
+        vehicle_summary["total_cost"] = (
+            vehicle_summary["driver_salary"]
+            + vehicle_summary["platform_fee"]
+            + vehicle_summary["running_cost"]
+        )
 
-    col4, col5, col6 = st.columns(3)
-    col4.metric("Total Mileage", f"{total_daily_mileage} km")
-    col5.metric("Uber Mileage", f"{total_uber_mileage} km")
-    col6.metric("Loss Mileage", f"{total_loss_mileage} km")
+        vehicle_summary["net_profit"] = vehicle_summary["fare"] - vehicle_summary["total_cost"]
 
-    st.metric("Cash Flow", f"Rs. {cash_flow:,.2f}")
+        st.dataframe(vehicle_summary.sort_values("net_profit", ascending=False))
+
+        fig2 = px.bar(
+            vehicle_summary,
+            x="vehicle_no",
+            y="net_profit",
+            title="Profit by Vehicle"
+        )
+
+        st.plotly_chart(fig2, use_container_width=True)
+
+    # =====================================================
+    # TAB 3 — EXPENSE INSIGHTS
+    # =====================================================
+    with tab3:
+
+        total_salary = df["driver_salary"].sum()
+        total_platform = df["platform_fee"].sum()
+        total_mileage = df["daily_mileage"].sum()
+        running_cost = total_mileage * 15.37
+
+        expense_data = pd.DataFrame({
+            "Category": ["Driver Salary", "Platform Fee", "Running Cost"],
+            "Amount": [total_salary, total_platform, running_cost]
+        })
+
+        fig3 = px.pie(
+            expense_data,
+            names="Category",
+            values="Amount",
+            title="Expense Breakdown"
+        )
+
+        st.plotly_chart(fig3, use_container_width=True)
 
 
 # -------------------------------------------------------------------
@@ -1218,6 +1251,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

@@ -755,9 +755,23 @@ def page_admin_dashboard():
                 next_air = row["air_filter_km"] + row["air_filter_interval_km"]
 
                 # Lease Calculation
-                lease_start = pd.to_datetime(row["lease_start_date"]).date()
-                total_installments = int(row["lease_total_installments"])
-                installment_amount = float(row["lease_installment_amount"])
+                # Safe Lease Conversion
+                lease_start = pd.to_datetime(
+                    row.get("lease_start_date", today)
+                ).date()
+
+                total_installments = pd.to_numeric(
+                row.get("lease_total_installments", 0),
+                errors="coerce"
+                )
+
+                installment_amount = pd.to_numeric(
+                    row.get("lease_installment_amount", 0),
+                    errors="coerce"
+                )
+
+                total_installments = 0 if pd.isna(total_installments) else int(total_installments)
+                installment_amount = 0 if pd.isna(installment_amount) else float(installment_amount)
 
                 months_passed = (today.year - lease_start.year) * 12 + (
                     today.month - lease_start.month
@@ -1422,6 +1436,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

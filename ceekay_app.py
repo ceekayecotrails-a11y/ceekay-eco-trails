@@ -665,17 +665,7 @@ def page_admin_dashboard():
         # ---------------------------------------
         # Get Latest Mileage Per Vehicle
         # ---------------------------------------
-        df_reports["end_mileage"] = pd.to_numeric(
-            df_reports["end_mileage"], errors="coerce"
-        ).fillna(0)
-
-        latest_mileage = (
-            df_reports.sort_values("date")
-            .groupby("vehicle_no")
-            .last()
-            .reset_index()
-        )[["vehicle_no", "end_mileage"]]
-
+        df_reports["end_mileage"]
         latest_mileage.rename(
             columns={"end_mileage": "current_mileage"},
             inplace=True
@@ -1436,6 +1426,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

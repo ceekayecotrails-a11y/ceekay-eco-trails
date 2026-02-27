@@ -644,145 +644,114 @@ def page_admin_dashboard():
 
         st.plotly_chart(fig3, use_container_width=True)
 
-# =====================================================
-# TAB 4 — VEHICLE DETAILS CARDS
-# =====================================================
-    with tab4:
+with tab4:
 
-        st.subheader("🚗 Fleet Maintenance & Leasing Overview")
+    st.subheader("🚗 Fleet Maintenance & Leasing Overview")
 
-        today = datetime.today().date()
+    today = datetime.today().date()
 
-        # Load all data
-        df_reports = pd.DataFrame(daily_sheet.get_all_records())
-        expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
-        master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
+    df_reports = pd.DataFrame(daily_sheet.get_all_records())
+    expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+    master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
 
-        if df_reports.empty or master_df.empty:
-            st.warning("No vehicle data available.")
-            st.stop()
+    if df_reports.empty or master_df.empty:
+        st.warning("No vehicle data available.")
+        st.stop()
 
-        # Clean vehicle numbers (remove spaces & hyphens)
-        master_df["vehicle_no"] = (
-            master_df["vehicle_no"]
-            .astype(str)
-            .str.replace("-", "", regex=False)
-            .str.strip()
+    # ---------------------------------------
+    # Get Latest Mileage
+    # ---------------------------------------
+    df_reports["date"] = pd.to_datetime(df_reports["date"], errors="coerce")
+    df_reports["end_mileage"] = pd.to_numeric(
+        df_reports["end_mileage"], errors="coerce"
+    ).fillna(0)
+
+    df_reports = df_reports[df_reports["status"] == "Correct"]
+
+    if df_reports.empty:
+        latest_mileage = pd.DataFrame(
+            columns=["vehicle_no", "current_mileage"]
+        )
+    else:
+        latest_mileage = (
+            df_reports
+            .sort_values("date")
+            .groupby("vehicle_no")
+            .tail(1)[["vehicle_no", "end_mileage"]]
+            .rename(columns={"end_mileage": "current_mileage"})
         )
 
-        latest_mileage["vehicle_no"] = (
-            latest_mileage["vehicle_no"]
-            .astype(str)
-            .str.replace("-", "", regex=False)
-            .str.strip()
+    # ---------------------------------------
+    # Extract Alignment & Air Filter Mileage
+    # ---------------------------------------
+    if not expense_df.empty:
+
+        expense_df["description"] = expense_df["description"].astype(str)
+
+        align_df = expense_df[
+            expense_df["description"].str.contains("alignment", case=False, na=False)
+        ].copy()
+
+        align_df["alignment_km"] = (
+            align_df["description"].str.extract(r'(\d+)').astype(float)
         )
 
-        latest_align["vehicle_no"] = (
-            latest_align["vehicle_no"]
-            .astype(str)
-            .str.replace("-", "", regex=False)
-            .str.strip()
+        latest_align = (
+            align_df.sort_values("alignment_km")
+            .groupby("vehicle_no")
+            .last()
+            .reset_index()
+        )[["vehicle_no", "alignment_km"]]
+
+        air_df = expense_df[
+            expense_df["description"].str.contains("air filter", case=False, na=False)
+        ].copy()
+
+        air_df["air_filter_km"] = (
+            air_df["description"].str.extract(r'(\d+)').astype(float)
         )
 
-        latest_air["vehicle_no"] = (
-            latest_air["vehicle_no"]
-            .astype(str)
-            .str.replace("-", "", regex=False)
-            .str.strip()
-        )
+        latest_air = (
+            air_df.sort_values("air_filter_km")
+            .groupby("vehicle_no")
+            .last()
+            .reset_index()
+        )[["vehicle_no", "air_filter_km"]]
 
-# ---------------------------------------
-# Get Latest Mileage Per Vehicle (SAFE)
-# ---------------------------------------
+    else:
+        latest_align = pd.DataFrame(columns=["vehicle_no", "alignment_km"])
+        latest_air = pd.DataFrame(columns=["vehicle_no", "air_filter_km"])
 
-        df_reports["date"] = pd.to_datetime(
-            df_reports["date"], errors="coerce"
-        )
-
-        df_reports["end_mileage"] = pd.to_numeric(
-            df_reports["end_mileage"], errors="coerce"
-        ).fillna(0)
-
-        # Filter approved reports
-        df_reports = df_reports[df_reports["status"] == "Correct"]
-
-        if df_reports.empty:
-            latest_mileage = pd.DataFrame(
-                columns=["vehicle_no", "current_mileage"]
+    # ---------------------------------------
+    # NOW Clean Vehicle Numbers (Correct Place)
+    # ---------------------------------------
+    def clean_vehicle(df):
+        if not df.empty:
+            df["vehicle_no"] = (
+                df["vehicle_no"]
+                .astype(str)
+                .str.replace("-", "", regex=False)
+                .str.strip()
             )
-        else:
-            latest_mileage = (
-                df_reports
-                .sort_values("date")
-                .groupby("vehicle_no")
-                .tail(1)
-                [["vehicle_no", "end_mileage"]]
-                .rename(columns={"end_mileage": "current_mileage"})
-            )
+        return df
 
-        
+    master_df = clean_vehicle(master_df)
+    latest_mileage = clean_vehicle(latest_mileage)
+    latest_align = clean_vehicle(latest_align)
+    latest_air = clean_vehicle(latest_air)
 
-        # ---------------------------------------
-        # Extract Alignment & Air Filter Mileage
-        # ---------------------------------------
-        if not expense_df.empty:
+    # ---------------------------------------
+    # Merge
+    # ---------------------------------------
+    vehicle_data = master_df.merge(
+        latest_mileage, on="vehicle_no", how="left"
+    ).merge(
+        latest_align, on="vehicle_no", how="left"
+    ).merge(
+        latest_air, on="vehicle_no", how="left"
+    )
 
-            expense_df["description"] = expense_df["description"].astype(str)
-
-            # Wheel Alignment
-            align_df = expense_df[
-                expense_df["description"].str.contains("alignment", case=False, na=False)
-            ].copy()
-
-            align_df["alignment_km"] = (
-                align_df["description"].str.extract(r'(\d+)').astype(float)
-            )
-
-            latest_align = (
-                align_df.sort_values("alignment_km")
-                .groupby("vehicle_no")
-                .last()
-                .reset_index()
-            )[["vehicle_no", "alignment_km"]]
-
-            # Air Filter
-            air_df = expense_df[
-                expense_df["description"].str.contains("air filter", case=False, na=False)
-            ].copy()
-
-            air_df["air_filter_km"] = (
-                air_df["description"].str.extract(r'(\d+)').astype(float)
-            )
-
-            latest_air = (
-                air_df.sort_values("air_filter_km")
-                .groupby("vehicle_no")
-                .last()
-                .reset_index()
-            )[["vehicle_no", "air_filter_km"]]
-
-        else:
-            latest_align = pd.DataFrame(columns=["vehicle_no", "alignment_km"])
-            latest_air = pd.DataFrame(columns=["vehicle_no", "air_filter_km"])
-
-        # ---------------------------------------
-        # Merge Everything
-        # ---------------------------------------
-        vehicle_data = master_df.merge(
-            latest_mileage, on="vehicle_no", how="left"
-        ).merge(
-            latest_align, on="vehicle_no", how="left"
-        ).merge(
-            latest_air, on="vehicle_no", how="left"
-        )
-
-        vehicle_data.fillna(0, inplace=True)
-
-        st.write("DEBUG - Latest Mileage")
-        st.dataframe(latest_mileage)
-
-        st.write("DEBUG - Master Vehicles")
-        st.dataframe(master_df[["vehicle_no"]])    
+    vehicle_data.fillna(0, inplace=True)
 
         # ---------------------------------------
         # Display Cards (2 per row)
@@ -1483,6 +1452,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

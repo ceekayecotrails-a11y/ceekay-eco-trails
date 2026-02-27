@@ -644,19 +644,19 @@ def page_admin_dashboard():
 
         st.plotly_chart(fig3, use_container_width=True)
 
-with tab4:
+    with tab4:
 
-    st.subheader("🚗 Fleet Maintenance & Leasing Overview")
+        st.subheader("🚗 Fleet Maintenance & Leasing Overview")
 
-    today = datetime.today().date()
+        today = datetime.today().date()
 
-    df_reports = pd.DataFrame(daily_sheet.get_all_records())
-    expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
-    master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
+        df_reports = pd.DataFrame(daily_sheet.get_all_records())
+        expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+        master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
 
-    if df_reports.empty or master_df.empty:
-        st.warning("No vehicle data available.")
-        st.stop()
+        if df_reports.empty or master_df.empty:
+            st.warning("No vehicle data available.")
+            st.stop()
 
     # ---------------------------------------
     # Get Latest Mileage
@@ -1451,6 +1451,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

@@ -658,193 +658,193 @@ def page_admin_dashboard():
             st.warning("No vehicle data available.")
             st.stop()
 
-    # ---------------------------------------
-    # Get Latest Mileage
-    # ---------------------------------------
-    df_reports["date"] = pd.to_datetime(df_reports["date"], errors="coerce")
-    df_reports["end_mileage"] = pd.to_numeric(
-        df_reports["end_mileage"], errors="coerce"
-    ).fillna(0)
-
-    df_reports = df_reports[df_reports["status"] == "Correct"]
-
-    if df_reports.empty:
-        latest_mileage = pd.DataFrame(
-            columns=["vehicle_no", "current_mileage"]
-        )
-    else:
-        latest_mileage = (
-            df_reports
-            .sort_values("date")
-            .groupby("vehicle_no")
-            .tail(1)[["vehicle_no", "end_mileage"]]
-            .rename(columns={"end_mileage": "current_mileage"})
-        )
-
-    # ---------------------------------------
-    # Extract Alignment & Air Filter Mileage
-    # ---------------------------------------
-    if not expense_df.empty:
-
-        expense_df["description"] = expense_df["description"].astype(str)
-
-        align_df = expense_df[
-            expense_df["description"].str.contains("alignment", case=False, na=False)
-        ].copy()
-
-        align_df["alignment_km"] = (
-            align_df["description"].str.extract(r'(\d+)').astype(float)
-        )
-
-        latest_align = (
-            align_df.sort_values("alignment_km")
-            .groupby("vehicle_no")
-            .last()
-            .reset_index()
-        )[["vehicle_no", "alignment_km"]]
-
-        air_df = expense_df[
-            expense_df["description"].str.contains("air filter", case=False, na=False)
-        ].copy()
-
-        air_df["air_filter_km"] = (
-            air_df["description"].str.extract(r'(\d+)').astype(float)
-        )
-
-        latest_air = (
-            air_df.sort_values("air_filter_km")
-            .groupby("vehicle_no")
-            .last()
-            .reset_index()
-        )[["vehicle_no", "air_filter_km"]]
-
-    else:
-        latest_align = pd.DataFrame(columns=["vehicle_no", "alignment_km"])
-        latest_air = pd.DataFrame(columns=["vehicle_no", "air_filter_km"])
-
-    # ---------------------------------------
-    # NOW Clean Vehicle Numbers (Correct Place)
-    # ---------------------------------------
-    def clean_vehicle(df):
-        if not df.empty:
-            df["vehicle_no"] = (
-                df["vehicle_no"]
-                .astype(str)
-                .str.replace("-", "", regex=False)
-                .str.strip()
+        # ---------------------------------------
+        # Get Latest Mileage
+        # ---------------------------------------
+        df_reports["date"] = pd.to_datetime(df_reports["date"], errors="coerce")
+        df_reports["end_mileage"] = pd.to_numeric(
+            df_reports["end_mileage"], errors="coerce"
+        ).fillna(0)
+    
+        df_reports = df_reports[df_reports["status"] == "Correct"]
+    
+        if df_reports.empty:
+            latest_mileage = pd.DataFrame(
+                columns=["vehicle_no", "current_mileage"]
             )
-        return df
-
-    master_df = clean_vehicle(master_df)
-    latest_mileage = clean_vehicle(latest_mileage)
-    latest_align = clean_vehicle(latest_align)
-    latest_air = clean_vehicle(latest_air)
-
-    # ---------------------------------------
-    # Merge
-    # ---------------------------------------
-    vehicle_data = master_df.merge(
-        latest_mileage, on="vehicle_no", how="left"
-    ).merge(
-        latest_align, on="vehicle_no", how="left"
-    ).merge(
-        latest_air, on="vehicle_no", how="left"
-    )
-
-    vehicle_data.fillna(0, inplace=True)
-
-    # ---------------------------------------
-    # Display Cards (2 per row)
-    # ---------------------------------------
-    cols = st.columns(2)
-
-    for i, row in vehicle_data.iterrows():
-
-        col = cols[i % 2]
-
-        with col:
-
-            current_mileage = row["current_mileage"]
-
-            # Calculate next services
-            next_alignment = row["alignment_km"] + row["alignment_interval_km"]
-            next_air = row["air_filter_km"] + row["air_filter_interval_km"]
-
-            # Lease Calculation
-            lease_start = pd.to_datetime(
-                row.get("lease_start_date", today)
-            ).date()
-
-            total_installments = pd.to_numeric(
-                row.get("lease_total_installments", 0),
-                errors="coerce"
+        else:
+            latest_mileage = (
+                df_reports
+                .sort_values("date")
+                .groupby("vehicle_no")
+                .tail(1)[["vehicle_no", "end_mileage"]]
+                .rename(columns={"end_mileage": "current_mileage"})
             )
-
-            installment_amount = pd.to_numeric(
-                row.get("lease_installment_amount", 0),
-                errors="coerce"
+    
+        # ---------------------------------------
+        # Extract Alignment & Air Filter Mileage
+        # ---------------------------------------
+        if not expense_df.empty:
+    
+            expense_df["description"] = expense_df["description"].astype(str)
+    
+            align_df = expense_df[
+                expense_df["description"].str.contains("alignment", case=False, na=False)
+            ].copy()
+    
+            align_df["alignment_km"] = (
+                align_df["description"].str.extract(r'(\d+)').astype(float)
             )
-
-            total_installments = 0 if pd.isna(total_installments) else int(total_installments)
-            installment_amount = 0 if pd.isna(installment_amount) else float(installment_amount)
-
-            months_passed = (today.year - lease_start.year) * 12 + (
-                today.month - lease_start.month
+    
+            latest_align = (
+                align_df.sort_values("alignment_km")
+                .groupby("vehicle_no")
+                .last()
+                .reset_index()
+            )[["vehicle_no", "alignment_km"]]
+    
+            air_df = expense_df[
+                expense_df["description"].str.contains("air filter", case=False, na=False)
+            ].copy()
+    
+            air_df["air_filter_km"] = (
+                air_df["description"].str.extract(r'(\d+)').astype(float)
             )
-
-            remaining_months = max(0, total_installments - months_passed)
-            remaining_balance = remaining_months * installment_amount
-
-            # Renewal Warnings
-            license_date = pd.to_datetime(row["license_renewal_date"]).date()
-            insurance_date = pd.to_datetime(row["insurance_renewal_date"]).date()
-
-            license_days = (license_date - today).days
-            insurance_days = (insurance_date - today).days
-
-            # Alignment warning
-            if current_mileage >= next_alignment:
-                alignment_status = "🔴 OVERDUE"
-            elif current_mileage >= next_alignment - 500:
-                alignment_status = "🟡 Due Soon"
-            else:
-                alignment_status = "🟢 OK"
-
-            # Air filter warning
-            if current_mileage >= next_air:
-                air_status = "🔴 OVERDUE"
-            elif current_mileage >= next_air - 1000:
-                air_status = "🟡 Due Soon"
-            else:
-                air_status = "🟢 OK"
-
-            st.markdown(f"""
-            ### 🚗 {row['vehicle_no']}
-
-            📍 **Current Mileage:** {int(current_mileage):,} km  
-
-            🛞 **Next Wheel Alignment:** {int(next_alignment):,} km  
-            Status: {alignment_status}  
-
-            🌬 **Next Air Filter Change:** {int(next_air):,} km  
-            Status: {air_status}  
-
-            ---
-
-            🗓 **License Renewal:** {license_date}  
-            ⏳ Days Remaining: {license_days}
-
-            🛡 **Insurance Renewal:** {insurance_date}  
-            ⏳ Days Remaining: {insurance_days}
-
-            ---
-
-            💳 **Lease Installment:** Rs. {installment_amount:,.0f}  
-            📦 Remaining Months: {remaining_months}  
-            💰 Remaining Balance: Rs. {remaining_balance:,.0f}
-
-            ---
-            """)
+    
+            latest_air = (
+                air_df.sort_values("air_filter_km")
+                .groupby("vehicle_no")
+                .last()
+                .reset_index()
+            )[["vehicle_no", "air_filter_km"]]
+    
+        else:
+            latest_align = pd.DataFrame(columns=["vehicle_no", "alignment_km"])
+            latest_air = pd.DataFrame(columns=["vehicle_no", "air_filter_km"])
+    
+        # ---------------------------------------
+        # NOW Clean Vehicle Numbers (Correct Place)
+        # ---------------------------------------
+        def clean_vehicle(df):
+            if not df.empty:
+                df["vehicle_no"] = (
+                    df["vehicle_no"]
+                    .astype(str)
+                    .str.replace("-", "", regex=False)
+                    .str.strip()
+                )
+            return df
+    
+        master_df = clean_vehicle(master_df)
+        latest_mileage = clean_vehicle(latest_mileage)
+        latest_align = clean_vehicle(latest_align)
+        latest_air = clean_vehicle(latest_air)
+    
+        # ---------------------------------------
+        # Merge
+        # ---------------------------------------
+        vehicle_data = master_df.merge(
+            latest_mileage, on="vehicle_no", how="left"
+        ).merge(
+            latest_align, on="vehicle_no", how="left"
+        ).merge(
+            latest_air, on="vehicle_no", how="left"
+        )
+    
+        vehicle_data.fillna(0, inplace=True)
+    
+        # ---------------------------------------
+        # Display Cards (2 per row)
+        # ---------------------------------------
+        cols = st.columns(2)
+    
+        for i, row in vehicle_data.iterrows():
+    
+            col = cols[i % 2]
+    
+            with col:
+    
+                current_mileage = row["current_mileage"]
+    
+                # Calculate next services
+                next_alignment = row["alignment_km"] + row["alignment_interval_km"]
+                next_air = row["air_filter_km"] + row["air_filter_interval_km"]
+    
+                # Lease Calculation
+                lease_start = pd.to_datetime(
+                    row.get("lease_start_date", today)
+                ).date()
+    
+                total_installments = pd.to_numeric(
+                    row.get("lease_total_installments", 0),
+                    errors="coerce"
+                )
+    
+                installment_amount = pd.to_numeric(
+                    row.get("lease_installment_amount", 0),
+                    errors="coerce"
+                )
+    
+                total_installments = 0 if pd.isna(total_installments) else int(total_installments)
+                installment_amount = 0 if pd.isna(installment_amount) else float(installment_amount)
+    
+                months_passed = (today.year - lease_start.year) * 12 + (
+                    today.month - lease_start.month
+                )
+    
+                remaining_months = max(0, total_installments - months_passed)
+                remaining_balance = remaining_months * installment_amount
+    
+                # Renewal Warnings
+                license_date = pd.to_datetime(row["license_renewal_date"]).date()
+                insurance_date = pd.to_datetime(row["insurance_renewal_date"]).date()
+    
+                license_days = (license_date - today).days
+                insurance_days = (insurance_date - today).days
+    
+                # Alignment warning
+                if current_mileage >= next_alignment:
+                    alignment_status = "🔴 OVERDUE"
+                elif current_mileage >= next_alignment - 500:
+                    alignment_status = "🟡 Due Soon"
+                else:
+                    alignment_status = "🟢 OK"
+    
+                # Air filter warning
+                if current_mileage >= next_air:
+                    air_status = "🔴 OVERDUE"
+                elif current_mileage >= next_air - 1000:
+                    air_status = "🟡 Due Soon"
+                else:
+                    air_status = "🟢 OK"
+    
+                st.markdown(f"""
+                ### 🚗 {row['vehicle_no']}
+    
+                📍 **Current Mileage:** {int(current_mileage):,} km  
+    
+                🛞 **Next Wheel Alignment:** {int(next_alignment):,} km  
+                Status: {alignment_status}  
+    
+                🌬 **Next Air Filter Change:** {int(next_air):,} km  
+                Status: {air_status}  
+    
+                ---
+    
+                🗓 **License Renewal:** {license_date}  
+                ⏳ Days Remaining: {license_days}
+    
+                🛡 **Insurance Renewal:** {insurance_date}  
+                ⏳ Days Remaining: {insurance_days}
+    
+                ---
+    
+                💳 **Lease Installment:** Rs. {installment_amount:,.0f}  
+                📦 Remaining Months: {remaining_months}  
+                💰 Remaining Balance: Rs. {remaining_balance:,.0f}
+    
+                ---
+                """)
 # -------------------------------------------------------------------
 # ADMIN DAILY PROFIT REPORT
 # -------------------------------------------------------------------
@@ -1451,6 +1451,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

@@ -753,99 +753,98 @@ with tab4:
 
     vehicle_data.fillna(0, inplace=True)
 
-        # ---------------------------------------
-        # Display Cards (2 per row)
-        # ---------------------------------------
+    # ---------------------------------------
+    # Display Cards (2 per row)
+    # ---------------------------------------
     cols = st.columns(2)
 
-        for i, row in vehicle_data.iterrows():
+    for i, row in vehicle_data.iterrows():
 
-            col = cols[i % 2]
+        col = cols[i % 2]
 
-            with col:
+        with col:
 
-                current_mileage = row["current_mileage"]
+            current_mileage = row["current_mileage"]
 
-                # Calculate next services
-                next_alignment = row["alignment_km"] + row["alignment_interval_km"]
-                next_air = row["air_filter_km"] + row["air_filter_interval_km"]
+            # Calculate next services
+            next_alignment = row["alignment_km"] + row["alignment_interval_km"]
+            next_air = row["air_filter_km"] + row["air_filter_interval_km"]
 
-                # Lease Calculation
-                # Safe Lease Conversion
-                lease_start = pd.to_datetime(
-                    row.get("lease_start_date", today)
-                ).date()
+            # Lease Calculation
+            lease_start = pd.to_datetime(
+                row.get("lease_start_date", today)
+            ).date()
 
-                total_installments = pd.to_numeric(
+            total_installments = pd.to_numeric(
                 row.get("lease_total_installments", 0),
                 errors="coerce"
-                )
+            )
 
-                installment_amount = pd.to_numeric(
-                    row.get("lease_installment_amount", 0),
-                    errors="coerce"
-                )
+            installment_amount = pd.to_numeric(
+                row.get("lease_installment_amount", 0),
+                errors="coerce"
+            )
 
-                total_installments = 0 if pd.isna(total_installments) else int(total_installments)
-                installment_amount = 0 if pd.isna(installment_amount) else float(installment_amount)
+            total_installments = 0 if pd.isna(total_installments) else int(total_installments)
+            installment_amount = 0 if pd.isna(installment_amount) else float(installment_amount)
 
-                months_passed = (today.year - lease_start.year) * 12 + (
-                    today.month - lease_start.month
-                )
+            months_passed = (today.year - lease_start.year) * 12 + (
+                today.month - lease_start.month
+            )
 
-                remaining_months = max(0, total_installments - months_passed)
-                remaining_balance = remaining_months * installment_amount
+            remaining_months = max(0, total_installments - months_passed)
+            remaining_balance = remaining_months * installment_amount
 
-                # Renewal Warnings
-                license_date = pd.to_datetime(row["license_renewal_date"]).date()
-                insurance_date = pd.to_datetime(row["insurance_renewal_date"]).date()
+            # Renewal Warnings
+            license_date = pd.to_datetime(row["license_renewal_date"]).date()
+            insurance_date = pd.to_datetime(row["insurance_renewal_date"]).date()
 
-                license_days = (license_date - today).days
-                insurance_days = (insurance_date - today).days
+            license_days = (license_date - today).days
+            insurance_days = (insurance_date - today).days
 
-                # Alignment warning
-                if current_mileage >= next_alignment:
-                    alignment_status = "🔴 OVERDUE"
-                elif current_mileage >= next_alignment - 500:
-                    alignment_status = "🟡 Due Soon"
-                else:
-                    alignment_status = "🟢 OK"
+            # Alignment warning
+            if current_mileage >= next_alignment:
+                alignment_status = "🔴 OVERDUE"
+            elif current_mileage >= next_alignment - 500:
+                alignment_status = "🟡 Due Soon"
+            else:
+                alignment_status = "🟢 OK"
 
-                # Air filter warning
-                if current_mileage >= next_air:
-                    air_status = "🔴 OVERDUE"
-                elif current_mileage >= next_air - 1000:
-                    air_status = "🟡 Due Soon"
-                else:
-                    air_status = "🟢 OK"
+            # Air filter warning
+            if current_mileage >= next_air:
+                air_status = "🔴 OVERDUE"
+            elif current_mileage >= next_air - 1000:
+                air_status = "🟡 Due Soon"
+            else:
+                air_status = "🟢 OK"
 
-                st.markdown(f"""
-                ### 🚗 {row['vehicle_no']}
+            st.markdown(f"""
+            ### 🚗 {row['vehicle_no']}
 
-                📍 **Current Mileage:** {int(current_mileage):,} km  
+            📍 **Current Mileage:** {int(current_mileage):,} km  
 
-                🛞 **Next Wheel Alignment:** {int(next_alignment):,} km  
-                Status: {alignment_status}  
+            🛞 **Next Wheel Alignment:** {int(next_alignment):,} km  
+            Status: {alignment_status}  
 
-                🌬 **Next Air Filter Change:** {int(next_air):,} km  
-                Status: {air_status}  
+            🌬 **Next Air Filter Change:** {int(next_air):,} km  
+            Status: {air_status}  
 
-                ---
+            ---
 
-                🗓 **License Renewal:** {license_date}  
-                ⏳ Days Remaining: {license_days}
+            🗓 **License Renewal:** {license_date}  
+            ⏳ Days Remaining: {license_days}
 
-                🛡 **Insurance Renewal:** {insurance_date}  
-                ⏳ Days Remaining: {insurance_days}
+            🛡 **Insurance Renewal:** {insurance_date}  
+            ⏳ Days Remaining: {insurance_days}
 
-                ---
+            ---
 
-                💳 **Lease Installment:** Rs. {installment_amount:,.0f}  
-                📦 Remaining Months: {remaining_months}  
-                💰 Remaining Balance: Rs. {remaining_balance:,.0f}
+            💳 **Lease Installment:** Rs. {installment_amount:,.0f}  
+            📦 Remaining Months: {remaining_months}  
+            💰 Remaining Balance: Rs. {remaining_balance:,.0f}
 
-                ---
-                """)
+            ---
+            """)
 # -------------------------------------------------------------------
 # ADMIN DAILY PROFIT REPORT
 # -------------------------------------------------------------------
@@ -1452,6 +1451,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

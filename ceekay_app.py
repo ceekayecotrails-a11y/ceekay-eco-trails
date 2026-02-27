@@ -756,7 +756,7 @@ with tab4:
         # ---------------------------------------
         # Display Cards (2 per row)
         # ---------------------------------------
-        cols = st.columns(2)
+    cols = st.columns(2)
 
         for i, row in vehicle_data.iterrows():
 
@@ -1452,6 +1452,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

@@ -727,6 +727,12 @@ def page_admin_dashboard():
 
         vehicle_data.fillna(0, inplace=True)
 
+        st.write("DEBUG - Latest Mileage")
+        st.dataframe(latest_mileage)
+
+        st.write("DEBUG - Master Vehicles")
+        st.dataframe(master_df[["vehicle_no"]])    
+
         # ---------------------------------------
         # Display Cards (2 per row)
         # ---------------------------------------
@@ -1426,6 +1432,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

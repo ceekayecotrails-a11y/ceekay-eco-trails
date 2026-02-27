@@ -662,6 +662,35 @@ def page_admin_dashboard():
             st.warning("No vehicle data available.")
             st.stop()
 
+        # Clean vehicle numbers (remove spaces & hyphens)
+        master_df["vehicle_no"] = (
+            master_df["vehicle_no"]
+            .astype(str)
+            .str.replace("-", "", regex=False)
+            .str.strip()
+        )
+
+        latest_mileage["vehicle_no"] = (
+            latest_mileage["vehicle_no"]
+            .astype(str)
+            .str.replace("-", "", regex=False)
+            .str.strip()
+        )
+
+        latest_align["vehicle_no"] = (
+            latest_align["vehicle_no"]
+            .astype(str)
+            .str.replace("-", "", regex=False)
+            .str.strip()
+        )
+
+        latest_air["vehicle_no"] = (
+            latest_air["vehicle_no"]
+            .astype(str)
+            .str.replace("-", "", regex=False)
+            .str.strip()
+        )
+
 # ---------------------------------------
 # Get Latest Mileage Per Vehicle (SAFE)
 # ---------------------------------------
@@ -1454,6 +1483,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

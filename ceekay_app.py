@@ -666,30 +666,30 @@ def page_admin_dashboard():
 # Get Latest Mileage Per Vehicle (SAFE)
 # ---------------------------------------
 
-df_reports["date"] = pd.to_datetime(
-    df_reports["date"], errors="coerce"
-)
+        df_reports["date"] = pd.to_datetime(
+            df_reports["date"], errors="coerce"
+        )
 
-df_reports["end_mileage"] = pd.to_numeric(
-    df_reports["end_mileage"], errors="coerce"
-).fillna(0)
+        df_reports["end_mileage"] = pd.to_numeric(
+            df_reports["end_mileage"], errors="coerce"
+        ).fillna(0)
 
-# Filter approved reports
-df_reports = df_reports[df_reports["status"] == "Correct"]
+        # Filter approved reports
+        df_reports = df_reports[df_reports["status"] == "Correct"]
 
-if df_reports.empty:
-    latest_mileage = pd.DataFrame(
-        columns=["vehicle_no", "current_mileage"]
-    )
-else:
-    latest_mileage = (
-        df_reports
-        .sort_values("date")
-        .groupby("vehicle_no")
-        .tail(1)
-        [["vehicle_no", "end_mileage"]]
-        .rename(columns={"end_mileage": "current_mileage"})
-    )
+        if df_reports.empty:
+            latest_mileage = pd.DataFrame(
+                columns=["vehicle_no", "current_mileage"]
+            )
+        else:
+            latest_mileage = (
+                df_reports
+                .sort_values("date")
+                .groupby("vehicle_no")
+                .tail(1)
+                [["vehicle_no", "end_mileage"]]
+                .rename(columns={"end_mileage": "current_mileage"})
+            )
 
         
 

@@ -574,9 +574,17 @@ def page_admin_dashboard():
         + df["tip"].sum()
         )
         total_platform = df["platform_fee"].sum()
-        total_mileage = df["daily_mileage"].sum()
 
-        running_cost = total_mileage * 15.37
+        # Load vehicle cost per km
+        master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
+        master_df["cost_per_km"] = pd.to_numeric(master_df["cost_per_km"], errors="coerce").fillna(0)
+
+        df = df.merge(master_df[["vehicle_no", "cost_per_km"]], on="vehicle_no", how="left")
+
+        df["vehicle_running_cost"] = df["daily_mileage"] * df["cost_per_km"]
+
+        running_cost = df["vehicle_running_cost"].sum()
+        total_mileage = df["daily_mileage"].sum()
         total_cost = total_salary + total_platform + running_cost
         net_profit = total_revenue - total_cost
 
@@ -990,7 +998,18 @@ def page_admin_range_profit():
     platform_fee = df_range["platform_fee"].sum()
     total_daily_mileage = df_range["daily_mileage"].sum()
 
-    vehicle_cost = total_daily_mileage * 15.37
+    master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
+    master_df["cost_per_km"] = pd.to_numeric(master_df["cost_per_km"], errors="coerce").fillna(0)
+
+    df_range = df_range.merge(
+        master_df[["vehicle_no", "cost_per_km"]],
+        on="vehicle_no",
+        how="left"
+    )
+
+    df_range["vehicle_running_cost"] = df_range["daily_mileage"] * df_range["cost_per_km"]
+
+    vehicle_cost = df_range["vehicle_running_cost"].sum()
     total_cost = total_salary + vehicle_cost + platform_fee
     profit = total_fare - total_cost
 
@@ -1050,7 +1069,18 @@ def page_admin_monthly_profit():
     platform_fee = df_month["platform_fee"].sum()
     total_daily_mileage = df_month["daily_mileage"].sum()
 
-    vehicle_cost = total_daily_mileage * 15.37
+    master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
+    master_df["cost_per_km"] = pd.to_numeric(master_df["cost_per_km"], errors="coerce").fillna(0)
+
+    df_month = df_month.merge(
+        master_df[["vehicle_no", "cost_per_km"]],
+        on="vehicle_no",
+        how="left"
+    )
+
+    df_month["vehicle_running_cost"] = df_month["daily_mileage"] * df_month["cost_per_km"]
+
+    vehicle_cost = df_month["vehicle_running_cost"].sum()
     total_cost = total_salary + vehicle_cost + platform_fee
     profit = total_fare - total_cost
 
@@ -1122,10 +1152,8 @@ def page_vehicle_report():
     )
     total_platform_fee = df_reports["platform_fee"].sum()
 
-    total_mileage = df_reports["daily_mileage"].sum()
-    cost_per_km = float(df_master.iloc[0].get("cost_per_km", 0))
-    vehicle_running_cost = total_mileage * cost_per_km
-
+        total_mileage = df_reports["daily_mileage"].sum()
+        
     # ---------------- Variable Costs ----------------
     df_variable = pd.DataFrame(vehicle_variable_sheet.get_all_records())
     df_variable["amount"] = pd.to_numeric(df_variable["amount"], errors="coerce").fillna(0)
@@ -1137,16 +1165,20 @@ def page_vehicle_report():
     else:
         total_variable = 0
 
-    # ---------------- Depreciation ----------------
+    # ---------------- Depreciation + Master Data ----------------
     df_master = pd.DataFrame(vehicle_master_sheet.get_all_records())
     df_master = df_master[df_master["vehicle_no"] == selected_vehicle]
 
     if not df_master.empty:
         purchase_cost = float(df_master.iloc[0]["purchase_cost"])
         useful_years = float(df_master.iloc[0]["useful_years"])
+        cost_per_km = float(df_master.iloc[0].get("cost_per_km", 0))
         monthly_depreciation = purchase_cost / (useful_years * 12)
     else:
         monthly_depreciation = 0
+        cost_per_km = 0
+
+    vehicle_running_cost = total_mileage * cost_per_km
 
     # ---------------- Final Calculation ----------------
     total_cost = (
@@ -1515,6 +1547,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

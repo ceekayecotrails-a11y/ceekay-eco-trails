@@ -1152,7 +1152,7 @@ def page_vehicle_report():
     )
     total_platform_fee = df_reports["platform_fee"].sum()
 
-        total_mileage = df_reports["daily_mileage"].sum()
+    total_mileage = df_reports["daily_mileage"].sum()
         
     # ---------------- Variable Costs ----------------
     df_variable = pd.DataFrame(vehicle_variable_sheet.get_all_records())
@@ -1547,6 +1547,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

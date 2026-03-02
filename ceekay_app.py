@@ -338,8 +338,9 @@ def page_driver_form(driver):
 
             daily = max(0, end - start)
             loss = daily - uber
-            salary = fare * 0.30
-            total_salary = salary + tip + toll
+            net_fare = max(0, fare - toll)
+            salary = net_fare * 0.30
+            total_salary = salary + toll + tip
             to_ceekay = cash - total_salary
 
             st.info(f"**Daily Mileage:** {daily} km")
@@ -369,8 +370,11 @@ def page_driver_form(driver):
 
         daily = st.session_state.end - st.session_state.start
         loss = daily - st.session_state.uber
-        salary = st.session_state.fare * 0.30
-        total_salary = salary + (st.session_state.tip or 0) + (st.session_state.toll or 0)
+        fare = st.session_state.fare
+        toll = st.session_state.toll or 0
+        net_fare = max(0, fare - toll)
+        salary = net_fare * 0.30
+        total_salary = salary + toll + (st.session_state.tip or 0)
         to_ceekay = st.session_state.cash - total_salary
 
         new_row = [
@@ -529,6 +533,7 @@ def page_admin_dashboard():
     # Convert numeric columns safely
     numeric_cols = [
         "fare", "driver_salary", "platform_fee",
+        "toll_fee", "tip",
         "daily_mileage", "uber_hire_mileage",
         "loss_mileage", "amount_to_ceekay",
         "bank_deposit"
@@ -563,7 +568,11 @@ def page_admin_dashboard():
     with tab1:
 
         total_revenue = df["fare"].sum()
-        total_salary = df["driver_salary"].sum()
+        total_salary = (
+        df["driver_salary"].sum()
+        + df["toll_fee"].sum()
+        + df["tip"].sum()
+        )
         total_platform = df["platform_fee"].sum()
         total_mileage = df["daily_mileage"].sum()
 
@@ -596,36 +605,42 @@ def page_admin_dashboard():
         vehicle_summary = df.groupby("vehicle_no").agg({
             "fare": "sum",
             "driver_salary": "sum",
+            "toll_fee": "sum",
+            "tip": "sum",
             "platform_fee": "sum",
             "daily_mileage": "sum"
         }).reset_index()
 
-        vehicle_summary["running_cost"] = vehicle_summary["daily_mileage"] * 15.37
-        vehicle_summary["total_cost"] = (
+        vehicle_summary["real_driver_cost"] = (
             vehicle_summary["driver_salary"]
+            + vehicle_summary["toll_fee"]
+            + vehicle_summary["tip"]
+        )
+
+        vehicle_summary["running_cost"] = vehicle_summary["daily_mileage"] * 15.37
+
+        vehicle_summary["total_cost"] = (
+            vehicle_summary["real_driver_cost"]
             + vehicle_summary["platform_fee"]
             + vehicle_summary["running_cost"]
         )
 
-        vehicle_summary["net_profit"] = vehicle_summary["fare"] - vehicle_summary["total_cost"]
-
-        st.dataframe(vehicle_summary.sort_values("net_profit", ascending=False))
-
-        fig2 = px.bar(
-            vehicle_summary,
-            x="vehicle_no",
-            y="net_profit",
-            title="Profit by Vehicle"
+        vehicle_summary["net_profit"] = (
+            vehicle_summary["fare"]
+            - vehicle_summary["total_cost"]
         )
-
-        st.plotly_chart(fig2, use_container_width=True)
+        st.dataframe(vehicle_summary)
 
     # =====================================================
     # TAB 3 — EXPENSE INSIGHTS
     # =====================================================
     with tab3:
 
-        total_salary = df["driver_salary"].sum()
+        total_salary = (
+        df["driver_salary"].sum()
+        + df["toll_fee"].sum()
+        + df["tip"].sum()
+        )
         total_platform = df["platform_fee"].sum()
         total_mileage = df["daily_mileage"].sum()
         running_cost = total_mileage * 15.37
@@ -855,9 +870,9 @@ def page_admin_daily_profit():
     df = pd.DataFrame(daily_sheet.get_all_records())
 
     numeric_cols = [
-        "fare", "driver_salary", "toll_fee", "other_expenses",
-        "cash_collected", "daily_mileage", "uber_hire_mileage",
-        "loss_mileage", "platform_fee", "amount_to_ceekay", "bank_deposit"
+    "fare", "driver_salary", "toll_fee", "tip", "other_expenses",
+    "cash_collected", "daily_mileage", "uber_hire_mileage",
+    "loss_mileage", "platform_fee", "amount_to_ceekay", "bank_deposit"
     ]
     for col in numeric_cols:
         if col in df.columns:
@@ -871,7 +886,11 @@ def page_admin_daily_profit():
         return
 
     total_fare = df_day["fare"].sum()
-    total_salary = df_day["driver_salary"].sum()
+    total_salary = (
+    df_day["driver_salary"].sum()
+    + df_day["toll_fee"].sum()
+    + df_day["tip"].sum()
+    )
     platform_fee = df_day["platform_fee"].sum()
     total_daily_mileage = df_day["daily_mileage"].sum()
 
@@ -906,12 +925,12 @@ def page_admin_range_profit():
     st.markdown("<h2>📂 Range Profit Report</h2>", unsafe_allow_html=True)
 
     df = pd.DataFrame(daily_sheet.get_all_records())
-    page_admin_daily_profit
+    
 
     numeric_cols = [
-        "fare", "driver_salary", "toll_fee", "other_expenses",
-        "cash_collected", "daily_mileage", "uber_hire_mileage",
-        "loss_mileage", "platform_fee", "amount_to_ceekay", "bank_deposit"
+    "fare", "driver_salary", "toll_fee", "tip", "other_expenses",
+    "cash_collected", "daily_mileage", "uber_hire_mileage",
+    "loss_mileage", "platform_fee", "amount_to_ceekay", "bank_deposit"
     ]
     for col in numeric_cols:
         if col in df.columns:
@@ -931,7 +950,11 @@ def page_admin_range_profit():
         return
 
     total_fare = df_range["fare"].sum()
-    total_salary = df_range["driver_salary"].sum()
+    total_salary = (
+    df_range["driver_salary"].sum()
+    + df_range["toll_fee"].sum()
+    + df_range["tip"].sum()
+    )
     platform_fee = df_range["platform_fee"].sum()
     total_daily_mileage = df_range["daily_mileage"].sum()
 
@@ -966,12 +989,12 @@ def page_admin_monthly_profit():
     st.markdown("<h2>📆 Monthly Profit Summary</h2>", unsafe_allow_html=True)
 
     df = pd.DataFrame(daily_sheet.get_all_records())
-    page_admin_daily_profit
+  
 
     numeric_cols = [
-        "fare", "driver_salary", "toll_fee", "other_expenses",
-        "cash_collected", "daily_mileage", "uber_hire_mileage",
-        "loss_mileage", "platform_fee", "amount_to_ceekay", "bank_deposit"
+    "fare", "driver_salary", "toll_fee", "tip", "other_expenses",
+    "cash_collected", "daily_mileage", "uber_hire_mileage",
+    "loss_mileage", "platform_fee", "amount_to_ceekay", "bank_deposit"
     ]
     for col in numeric_cols:
         if col in df.columns:
@@ -987,7 +1010,11 @@ def page_admin_monthly_profit():
         return
 
     total_fare = df_month["fare"].sum()
-    total_salary = df_month["driver_salary"].sum()
+    total_salary = (
+    df_month["driver_salary"].sum()
+    + df_month["toll_fee"].sum()
+    + df_month["tip"].sum()
+    )
     platform_fee = df_month["platform_fee"].sum()
     total_daily_mileage = df_month["daily_mileage"].sum()
 
@@ -1056,7 +1083,11 @@ def page_vehicle_report():
         df_reports[col] = pd.to_numeric(df_reports[col], errors="coerce").fillna(0)
 
     total_revenue = df_reports["fare"].sum()
-    total_driver_salary = df_reports["driver_salary"].sum()
+    total_driver_salary = (
+    df_reports["driver_salary"].sum()
+    + df_reports["toll_fee"].sum()
+    + df_reports["tip"].sum()
+    )
     total_platform_fee = df_reports["platform_fee"].sum()
 
     total_mileage = df_reports["daily_mileage"].sum()
@@ -1451,6 +1482,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

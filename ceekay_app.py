@@ -608,7 +608,7 @@ def page_admin_dashboard():
             df["vehicle_running_cost"] = pd.to_numeric(
                 df.get("vehicle_running_cost", 0),
                 errors="coerce"
-        ).fillna(0)
+            ).fillna(0)
 
         running_cost = df["vehicle_running_cost"].sum()
         total_mileage = df["daily_mileage"].sum()
@@ -635,65 +635,41 @@ def page_admin_dashboard():
     # =====================================================
     # TAB 2 — VEHICLE PERFORMANCE
     # =====================================================
-    with tab2:
+with tab2:
 
-        vehicle_summary = df.groupby("vehicle_no").agg({
-            "fare": "sum",
-            "driver_salary": "sum",
-            "toll_fee": "sum",
-            "tip": "sum",
-            "platform_fee": "sum",
-            "daily_mileage": "sum"
-        }).reset_index()
+    df["vehicle_running_cost"] = pd.to_numeric(
+        df.get("vehicle_running_cost", 0),
+        errors="coerce"
+    ).fillna(0)
 
-        vehicle_summary["real_driver_cost"] = (
-            vehicle_summary["driver_salary"]
-            + vehicle_summary["toll_fee"]
-            + vehicle_summary["tip"]
-        )
+    vehicle_summary = df.groupby("vehicle_no").agg({
+        "fare": "sum",
+        "driver_salary": "sum",
+        "toll_fee": "sum",
+        "tip": "sum",
+        "platform_fee": "sum",
+        "daily_mileage": "sum",
+        "vehicle_running_cost": "sum"
+    }).reset_index()
 
-        # Merge cost_per_km from master sheet
-        vehicle_summary = df.groupby("vehicle_no").agg({
-            "fare": "sum",
-            "driver_salary": "sum",
-            "toll_fee": "sum",
-            "tip": "sum",
-            "platform_fee": "sum",
-            "daily_mileage": "sum",
-            "vehicle_running_cost": "sum"
-        }).reset_index()
+    vehicle_summary["real_driver_cost"] = (
+        vehicle_summary["driver_salary"]
+        + vehicle_summary["toll_fee"]
+        + vehicle_summary["tip"]
+    )
 
-        vehicle_summary["real_driver_cost"] = (
-            vehicle_summary["driver_salary"]
-            + vehicle_summary["toll_fee"]
-            + vehicle_summary["tip"]
-        )
+    vehicle_summary["total_cost"] = (
+        vehicle_summary["real_driver_cost"]
+        + vehicle_summary["platform_fee"]
+        + vehicle_summary["vehicle_running_cost"]
+    )
 
-        vehicle_summary["total_cost"] = (
-            vehicle_summary["real_driver_cost"]
-            + vehicle_summary["platform_fee"]
-            + vehicle_summary["vehicle_running_cost"]
-        )
+    vehicle_summary["net_profit"] = (
+        vehicle_summary["fare"]
+        - vehicle_summary["total_cost"]
+    )
 
-        vehicle_summary["net_profit"] = (
-            vehicle_summary["fare"]
-            - vehicle_summary["total_cost"]
-        )
-
-        st.dataframe(vehicle_summary)
-
-        vehicle_summary["total_cost"] = (
-            vehicle_summary["real_driver_cost"]
-            + vehicle_summary["platform_fee"]
-            + vehicle_summary["running_cost"]
-        )
-
-        vehicle_summary["net_profit"] = (
-            vehicle_summary["fare"]
-            - vehicle_summary["total_cost"]
-        )
-        st.dataframe(vehicle_summary)
-
+    st.dataframe(vehicle_summary)
     # =====================================================
     # TAB 3 — EXPENSE INSIGHTS
     # =====================================================
@@ -1588,6 +1564,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

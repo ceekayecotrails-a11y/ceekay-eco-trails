@@ -377,6 +377,33 @@ def page_driver_form(driver):
         total_salary = salary + toll + (st.session_state.tip or 0)
         to_ceekay = st.session_state.cash - total_salary
 
+        # 🔹 Load vehicle cost per km
+        master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
+
+        master_df["vehicle_no"] = (
+            master_df["vehicle_no"]
+            .astype(str)
+            .str.replace("-", "", regex=False)
+            .str.strip()
+        )
+
+        vehicle_no_clean = (
+            driver["vehicle_no"]
+            .replace("-", "")
+            .strip()
+        )
+
+        vehicle_row = master_df[
+           master_df["vehicle_no"] == vehicle_no_clean
+        ]
+
+        if not vehicle_row.empty:
+            cost_per_km = float(vehicle_row.iloc[0].get("cost_per_km", 0))
+        else:
+            cost_per_km = 0
+
+        vehicle_running_cost = daily * cost_per_km
+
         new_row = [
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             st.session_state.report_date.strftime("%Y-%m-%d"),
@@ -399,6 +426,8 @@ def page_driver_form(driver):
             "Pending",
             "",
             "",
+            cost_per_km,
+            vehicle_running_cost
         ]
 
         daily_sheet.append_row(new_row)
@@ -576,19 +605,12 @@ def page_admin_dashboard():
         total_platform = df["platform_fee"].sum()
 
         # Load vehicle cost per km
-        master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
-        master_df["cost_per_km"] = pd.to_numeric(master_df["cost_per_km"], errors="coerce").fillna(0)
+            df["vehicle_running_cost"] = pd.to_numeric(
+                df.get("vehicle_running_cost", 0),
+                errors="coerce"
+        ).fillna(0)
 
-        df_cost = df.merge(
-            master_df[["vehicle_no", "cost_per_km"]],
-            on="vehicle_no",
-            how="left"
-        )
-
-        df_cost["cost_per_km"] = df_cost["cost_per_km"].fillna(0)
-        df_cost["vehicle_running_cost"] = df_cost["daily_mileage"] * df_cost["cost_per_km"]
-
-        running_cost = df_cost["vehicle_running_cost"].sum()
+        running_cost = df["vehicle_running_cost"].sum()
         total_mileage = df["daily_mileage"].sum()
         total_cost = total_salary + total_platform + running_cost
         net_profit = total_revenue - total_cost
@@ -631,18 +653,34 @@ def page_admin_dashboard():
         )
 
         # Merge cost_per_km from master sheet
-        master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
-        master_df["cost_per_km"] = pd.to_numeric(master_df["cost_per_km"], errors="coerce").fillna(0)
+        vehicle_summary = df.groupby("vehicle_no").agg({
+            "fare": "sum",
+            "driver_salary": "sum",
+            "toll_fee": "sum",
+            "tip": "sum",
+            "platform_fee": "sum",
+            "daily_mileage": "sum",
+            "vehicle_running_cost": "sum"
+        }).reset_index()
 
-        vehicle_summary = vehicle_summary.merge(
-            master_df[["vehicle_no", "cost_per_km"]],
-            on="vehicle_no",
-            how="left"
+        vehicle_summary["real_driver_cost"] = (
+            vehicle_summary["driver_salary"]
+            + vehicle_summary["toll_fee"]
+            + vehicle_summary["tip"]
         )
 
-        vehicle_summary["running_cost"] = (
-            vehicle_summary["daily_mileage"] * vehicle_summary["cost_per_km"]
+        vehicle_summary["total_cost"] = (
+            vehicle_summary["real_driver_cost"]
+            + vehicle_summary["platform_fee"]
+            + vehicle_summary["vehicle_running_cost"]
         )
+
+        vehicle_summary["net_profit"] = (
+            vehicle_summary["fare"]
+            - vehicle_summary["total_cost"]
+        )
+
+        st.dataframe(vehicle_summary)
 
         vehicle_summary["total_cost"] = (
             vehicle_summary["real_driver_cost"]
@@ -669,22 +707,12 @@ def page_admin_dashboard():
         total_platform = df["platform_fee"].sum()
         total_mileage = df["daily_mileage"].sum()
         # Load cost per km
-        master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
-        master_df["cost_per_km"] = pd.to_numeric(master_df["cost_per_km"], errors="coerce").fillna(0)
+        df["vehicle_running_cost"] = pd.to_numeric(
+            df.get("vehicle_running_cost", 0),
+            errors="coerce"
+        ).fillna(0)
 
-        df_cost = df.merge(
-            master_df[["vehicle_no", "cost_per_km"]],
-            on="vehicle_no",
-            how="left"
-        )
-
-        df_cost["cost_per_km"] = df_cost["cost_per_km"].fillna(0)
-
-        df_cost["vehicle_running_cost"] = (
-            df_cost["daily_mileage"] * df_cost["cost_per_km"]
-        )
-
-        running_cost = df_cost["vehicle_running_cost"].sum()
+        running_cost = df["vehicle_running_cost"].sum()
 
         expense_data = pd.DataFrame({
             "Category": ["Driver Salary", "Platform Fee", "Running Cost"],
@@ -1560,6 +1588,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

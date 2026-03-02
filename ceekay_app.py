@@ -579,11 +579,16 @@ def page_admin_dashboard():
         master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
         master_df["cost_per_km"] = pd.to_numeric(master_df["cost_per_km"], errors="coerce").fillna(0)
 
-        df = df.merge(master_df[["vehicle_no", "cost_per_km"]], on="vehicle_no", how="left")
+        df_cost = df.merge(
+            master_df[["vehicle_no", "cost_per_km"]],
+            on="vehicle_no",
+            how="left"
+        )
 
-        df["vehicle_running_cost"] = df["daily_mileage"] * df["cost_per_km"]
+        df_cost["cost_per_km"] = df_cost["cost_per_km"].fillna(0)
+        df_cost["vehicle_running_cost"] = df_cost["daily_mileage"] * df_cost["cost_per_km"]
 
-        running_cost = df["vehicle_running_cost"].sum()
+        running_cost = df_cost["vehicle_running_cost"].sum()
         total_mileage = df["daily_mileage"].sum()
         total_cost = total_salary + total_platform + running_cost
         net_profit = total_revenue - total_cost
@@ -667,11 +672,19 @@ def page_admin_dashboard():
         master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
         master_df["cost_per_km"] = pd.to_numeric(master_df["cost_per_km"], errors="coerce").fillna(0)
 
-        df = df.merge(master_df[["vehicle_no", "cost_per_km"]], on="vehicle_no", how="left")
+        df_cost = df.merge(
+            master_df[["vehicle_no", "cost_per_km"]],
+            on="vehicle_no",
+            how="left"
+        )
 
-        df["vehicle_running_cost"] = df["daily_mileage"] * df["cost_per_km"]
+        df_cost["cost_per_km"] = df_cost["cost_per_km"].fillna(0)
 
-        running_cost = df["vehicle_running_cost"].sum()
+        df_cost["vehicle_running_cost"] = (
+            df_cost["daily_mileage"] * df_cost["cost_per_km"]
+        )
+
+        running_cost = df_cost["vehicle_running_cost"].sum()
 
         expense_data = pd.DataFrame({
             "Category": ["Driver Salary", "Platform Fee", "Running Cost"],
@@ -1547,6 +1560,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

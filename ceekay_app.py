@@ -598,17 +598,17 @@ def page_admin_dashboard():
 
         total_revenue = df["fare"].sum()
         total_salary = (
-        df["driver_salary"].sum()
-        + df["toll_fee"].sum()
-        + df["tip"].sum()
+            df["driver_salary"].sum()
+            + df["toll_fee"].sum()
+            + df["tip"].sum()
         )
         total_platform = df["platform_fee"].sum()
 
         # Load vehicle cost per km
-            df["vehicle_running_cost"] = pd.to_numeric(
-                df.get("vehicle_running_cost", 0),
-                errors="coerce"
-            ).fillna(0)
+        df["vehicle_running_cost"] = pd.to_numeric(
+            df.get("vehicle_running_cost", 0),
+            errors="coerce"
+        ).fillna(0)
 
         running_cost = df["vehicle_running_cost"].sum()
         total_mileage = df["daily_mileage"].sum()
@@ -616,9 +616,9 @@ def page_admin_dashboard():
         net_profit = total_revenue - total_cost
 
         if total_mileage > 0:
-            profit_per_km = net_profit / total_mileage
+        profit_per_km = net_profit / total_mileage
         else:
-            profit_per_km = 0
+        profit_per_km = 0
 
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("Total Revenue", f"Rs. {total_revenue:,.0f}")
@@ -1564,6 +1564,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

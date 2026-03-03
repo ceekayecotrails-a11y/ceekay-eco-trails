@@ -885,13 +885,10 @@ def page_admin_dashboard():
 
         st.plotly_chart(fig3, use_container_width=True)
 
-    with tab4:
-
-        st.subheader("🚗 Fleet Maintenance & Leasing Overview")
-
-        today = datetime.today().date()
-
-        with tab4:
+# =====================================================
+# TAB 4 — VEHICLE DETAILS
+# =====================================================
+with tab4:
 
     st.subheader("🚗 Fleet Maintenance & Leasing Overview")
 
@@ -912,9 +909,7 @@ def page_admin_dashboard():
 
             current_mileage = row["current_mileage"]
 
-            # -------------------------
             # Alignment Status
-            # -------------------------
             if current_mileage >= row["next_alignment"]:
                 alignment_status = "🔴 OVERDUE"
             elif current_mileage >= row["next_alignment"] - 500:
@@ -922,9 +917,7 @@ def page_admin_dashboard():
             else:
                 alignment_status = "🟢 OK"
 
-            # -------------------------
             # Air Filter Status
-            # -------------------------
             if current_mileage >= row["next_air_filter"]:
                 air_status = "🔴 OVERDUE"
             elif current_mileage >= row["next_air_filter"] - 1000:
@@ -932,9 +925,7 @@ def page_admin_dashboard():
             else:
                 air_status = "🟢 OK"
 
-            # -------------------------
             # Lease Calculation
-            # -------------------------
             lease_start = pd.to_datetime(
                 row.get("lease_start_date", today)
             ).date()
@@ -949,9 +940,7 @@ def page_admin_dashboard():
             remaining_months = max(0, total_installments - months_passed)
             remaining_balance = remaining_months * installment_amount
 
-            # -------------------------
             # Renewal Dates
-            # -------------------------
             license_date = pd.to_datetime(row["license_renewal_date"]).date()
             insurance_date = pd.to_datetime(row["insurance_renewal_date"]).date()
 
@@ -985,7 +974,6 @@ def page_admin_dashboard():
 
             ---
             """)
-
 
         # Convert service interval columns safely
         numeric_service_cols = [
@@ -1739,6 +1727,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

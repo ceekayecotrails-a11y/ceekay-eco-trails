@@ -780,7 +780,6 @@ def page_admin_dashboard():
         total_revenue = df["fare"].sum()
         total_salary = (
             df["driver_salary"].sum()
-            + df["toll_fee"].sum()
             + df["tip"].sum()
         )
         total_platform = df["platform_fee"].sum()
@@ -835,7 +834,6 @@ def page_admin_dashboard():
     
         vehicle_summary["real_driver_cost"] = (
             vehicle_summary["driver_salary"]
-            + vehicle_summary["toll_fee"]
             + vehicle_summary["tip"]
         )
     
@@ -857,9 +855,8 @@ def page_admin_dashboard():
     with tab3:
 
         total_salary = (
-        df["driver_salary"].sum()
-        + df["toll_fee"].sum()
-        + df["tip"].sum()
+            df["driver_salary"].sum()
+            + df["tip"].sum()
         )
         total_platform = df["platform_fee"].sum()
         total_mileage = df["daily_mileage"].sum()
@@ -999,9 +996,8 @@ def page_admin_daily_profit():
 
     total_fare = df_day["fare"].sum()
     total_salary = (
-    df_day["driver_salary"].sum()
-    + df_day["toll_fee"].sum()
-    + df_day["tip"].sum()
+        df_day["driver_salary"].sum()
+        + df_day["tip"].sum()
     )
     platform_fee = df_day["platform_fee"].sum()
     total_daily_mileage = df_day["daily_mileage"].sum()
@@ -1069,9 +1065,8 @@ def page_admin_range_profit():
 
     total_fare = df_range["fare"].sum()
     total_salary = (
-    df_range["driver_salary"].sum()
-    + df_range["toll_fee"].sum()
-    + df_range["tip"].sum()
+        df_day["driver_salary"].sum()
+        + df_day["tip"].sum()
     )
     platform_fee = df_range["platform_fee"].sum()
     total_daily_mileage = df_range["daily_mileage"].sum()
@@ -1617,6 +1612,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

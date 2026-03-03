@@ -892,12 +892,10 @@ with tab4:
 
     st.subheader("🚗 Fleet Maintenance & Leasing Overview")
 
-    vehicle_data = get_vehicle_service_data()
-
     if vehicle_data.empty:
         st.warning("No vehicle data available.")
-        return
-
+        st.stop()
+    
     today = datetime.today().date()
     cols = st.columns(2)
 
@@ -1727,6 +1725,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

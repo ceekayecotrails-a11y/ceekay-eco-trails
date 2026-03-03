@@ -814,6 +814,20 @@ def page_admin_dashboard():
         )
     
         vehicle_data.fillna(0, inplace=True)
+        # Convert service interval columns safely
+        numeric_service_cols = [
+            "alignment_km",
+            "alignment_interval_km",
+            "air_filter_km",
+            "air_filter_interval_km"
+        ]
+
+        for col in numeric_service_cols:
+            if col in vehicle_data.columns:
+                vehicle_data[col] = pd.to_numeric(
+                    vehicle_data[col],
+                    errors="coerce"
+                ).fillna(0)
     
         # ---------------------------------------
         # Display Cards (2 per row)
@@ -829,8 +843,8 @@ def page_admin_dashboard():
                 current_mileage = row["current_mileage"]
     
                 # Calculate next services
-                next_alignment = row["alignment_km"] + row["alignment_interval_km"]
-                next_air = row["air_filter_km"] + row["air_filter_interval_km"]
+                next_alignment = float(row.get("alignment_km", 0)) + float(row.get("alignment_interval_km", 0))
+                next_air = float(row.get("air_filter_km", 0)) + float(row.get("air_filter_interval_km", 0))
     
                 # Lease Calculation
                 lease_start = pd.to_datetime(
@@ -1552,6 +1566,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

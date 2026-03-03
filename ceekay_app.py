@@ -146,7 +146,7 @@ def driver_auth(username, password):
 def sidebar_menu(user_type):
 
     with st.sidebar:
-        st.image("logo.png", use_column_width=True)
+        st.image("logo.png", width=120)
         st.markdown("---")
 
     icons = {
@@ -1612,6 +1612,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

@@ -426,6 +426,8 @@ def page_driver_form(driver):
             "Pending",
             "",
             "",
+            0,
+            0,
             cost_per_km,
             vehicle_running_cost
         ]
@@ -1564,6 +1566,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

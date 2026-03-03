@@ -599,74 +599,74 @@ def page_admin_dashboard():
     with tab1:
      
 
-    # =====================================================
-    # SERVICE ALERT SECTION
-    # =====================================================
-
-    st.markdown("## 🚨 Service Alerts")
-
-    df_reports = pd.DataFrame(daily_sheet.get_all_records())
-    master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
-
-    if not df_reports.empty and not master_df.empty:
-
-        df_reports["date"] = pd.to_datetime(df_reports["date"], errors="coerce")
-        df_reports["end_mileage"] = pd.to_numeric(
-            df_reports["end_mileage"], errors="coerce"
-        ).fillna(0)
-
-        df_reports = df_reports[df_reports["status"] == "Correct"]
-
-        latest_mileage = (
-            df_reports.sort_values("date")
-            .groupby("vehicle_no")
-            .tail(1)[["vehicle_no", "end_mileage"]]
-            .rename(columns={"end_mileage": "current_mileage"})
-        )
-
-        master_df["alignment_interval_km"] = pd.to_numeric(
-            master_df.get("alignment_interval_km", 0),
-            errors="coerce"
-        ).fillna(0)
-
-        master_df["air_filter_interval_km"] = pd.to_numeric(
-            master_df.get("air_filter_interval_km", 0),
-            errors="coerce"
-        ).fillna(0)
-
-        vehicle_data = master_df.merge(
-            latest_mileage, on="vehicle_no", how="left"
-        ).fillna(0)
-
-        alerts = []
-
-        for _, row in vehicle_data.iterrows():
-
-            current = row["current_mileage"]
-            align_interval = row["alignment_interval_km"]
-            air_interval = row["air_filter_interval_km"]
-
-            if align_interval > 0 and current >= align_interval:
-                alerts.append(f"🔴 {row['vehicle_no']} - Wheel Alignment OVERDUE")
-
-            elif align_interval > 0 and current >= align_interval - 500:
-                alerts.append(f"🟡 {row['vehicle_no']} - Wheel Alignment Due Soon")
-
-            if air_interval > 0 and current >= air_interval:
-                alerts.append(f"🔴 {row['vehicle_no']} - Air Filter OVERDUE")
-
-            elif air_interval > 0 and current >= air_interval - 1000:
-                alerts.append(f"🟡 {row['vehicle_no']} - Air Filter Due Soon")
-
-        if alerts:
-            for alert in alerts:
-                st.warning(alert)
-        else:
-            st.success("All vehicles are service-ready ✅")
-
-    st.markdown("---")
-
-    total_revenue = df["fare"].sum()
+        # =====================================================
+        # SERVICE ALERT SECTION
+        # =====================================================
+    
+        st.markdown("## 🚨 Service Alerts")
+    
+        df_reports = pd.DataFrame(daily_sheet.get_all_records())
+        master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
+    
+        if not df_reports.empty and not master_df.empty:
+    
+            df_reports["date"] = pd.to_datetime(df_reports["date"], errors="coerce")
+            df_reports["end_mileage"] = pd.to_numeric(
+                df_reports["end_mileage"], errors="coerce"
+            ).fillna(0)
+    
+            df_reports = df_reports[df_reports["status"] == "Correct"]
+    
+            latest_mileage = (
+                df_reports.sort_values("date")
+                .groupby("vehicle_no")
+                .tail(1)[["vehicle_no", "end_mileage"]]
+                .rename(columns={"end_mileage": "current_mileage"})
+            )
+    
+            master_df["alignment_interval_km"] = pd.to_numeric(
+                master_df.get("alignment_interval_km", 0),
+                errors="coerce"
+            ).fillna(0)
+    
+            master_df["air_filter_interval_km"] = pd.to_numeric(
+                master_df.get("air_filter_interval_km", 0),
+                errors="coerce"
+            ).fillna(0)
+    
+            vehicle_data = master_df.merge(
+                latest_mileage, on="vehicle_no", how="left"
+            ).fillna(0)
+    
+            alerts = []
+    
+            for _, row in vehicle_data.iterrows():
+    
+                current = row["current_mileage"]
+                align_interval = row["alignment_interval_km"]
+                air_interval = row["air_filter_interval_km"]
+    
+                if align_interval > 0 and current >= align_interval:
+                    alerts.append(f"🔴 {row['vehicle_no']} - Wheel Alignment OVERDUE")
+    
+                elif align_interval > 0 and current >= align_interval - 500:
+                    alerts.append(f"🟡 {row['vehicle_no']} - Wheel Alignment Due Soon")
+    
+                if air_interval > 0 and current >= air_interval:
+                    alerts.append(f"🔴 {row['vehicle_no']} - Air Filter OVERDUE")
+    
+                elif air_interval > 0 and current >= air_interval - 1000:
+                    alerts.append(f"🟡 {row['vehicle_no']} - Air Filter Due Soon")
+    
+            if alerts:
+                for alert in alerts:
+                    st.warning(alert)
+            else:
+                st.success("All vehicles are service-ready ✅")
+    
+        st.markdown("---")
+    
+        total_revenue = df["fare"].sum()
 
         total_revenue = df["fare"].sum()
         total_salary = (
@@ -1636,6 +1636,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

@@ -995,10 +995,7 @@ def page_admin_dashboard():
         total_revenue = df["fare"].sum()
 
         total_revenue = df["fare"].sum()
-        total_salary = (
-            df["driver_salary"].sum()
-            + df["tip"].sum()
-        )
+        total_salary = df["driver_salary"].sum()
         total_platform = df["platform_fee"].sum()
 
         # Load vehicle cost per km
@@ -1071,10 +1068,7 @@ def page_admin_dashboard():
     # =====================================================
     with tab3:
 
-        total_salary = (
-            df["driver_salary"].sum()
-            + df["tip"].sum()
-        )
+        total_salary = df["driver_salary"].sum()
         total_platform = df["platform_fee"].sum()
         total_mileage = df["daily_mileage"].sum()
         # Load cost per km
@@ -1826,3 +1820,4 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+

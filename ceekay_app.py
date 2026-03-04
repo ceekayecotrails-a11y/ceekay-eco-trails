@@ -521,6 +521,10 @@ def page_driver_dashboard(driver):
     uber_mileage = df["uber_hire_mileage"].sum()
     loss_mileage = df["loss_mileage"].sum()
 
+    # Convert numbers safely
+    df["driver_salary"] = pd.to_numeric(df["driver_salary"], errors="coerce").fillna(0)
+    df["tip"] = pd.to_numeric(df["tip"], errors="coerce").fillna(0)
+
     # Earnings totals
     total_salary = df["driver_salary"].sum()
     total_tips = df["tip"].sum()
@@ -1820,4 +1824,5 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 

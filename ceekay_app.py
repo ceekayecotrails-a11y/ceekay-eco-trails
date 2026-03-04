@@ -542,7 +542,7 @@ def page_driver_dashboard(driver):
     # DRIVER DASHBOARD UI v2
     # =====================================================
 
-    st.markdown("##Performance Overview")
+    st.markdown("## Performance Overview")
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -557,7 +557,7 @@ def page_driver_dashboard(driver):
     # MILEAGE SECTION
     # =====================================================
 
-    st.markdown("##Mileage Summary")
+    st.markdown("## Mileage Summary")
 
     m1, m2, m3 = st.columns(3)
 
@@ -571,7 +571,7 @@ def page_driver_dashboard(driver):
     # EARNINGS SECTION
     # =====================================================
 
-    st.markdown("##Earnings Summary")
+    st.markdown("## Earnings Summary")
 
     e1, e2, e3 = st.columns(3)
 
@@ -585,7 +585,7 @@ def page_driver_dashboard(driver):
     # RECORDS
     # =====================================================
 
-    st.markdown("##Personal Records")
+    st.markdown("## Personal Records")
 
     r1, r2 = st.columns(2)
 
@@ -1826,6 +1826,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

@@ -1026,26 +1026,35 @@ def page_admin_dashboard():
         else:
             donations_total = 0
 
-        # -----------------------------
-        # VEHICLE EXPENSES
-        # -----------------------------
-        expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
-        
-        if not expense_df.empty:
-        
-            expense_df["date"] = pd.to_datetime(expense_df["date"], errors="coerce")
-        
-            expense_df = expense_df[
-                (expense_df["date"] >= pd.to_datetime(start_date)) &
-                (expense_df["date"] <= pd.to_datetime(end_date))
-            ]
-        
-            expense_df["amount"] = pd.to_numeric(
-                expense_df["amount"], errors="coerce"
-            ).fillna(0)
-        
-            vehicle_expense_total = expense_df["amount"].sum()
-        
+    # -----------------------------
+    # VEHICLE EXPENSES
+    # -----------------------------
+    expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+    
+    vehicle_expense_total = 0
+    
+    if not expense_df.empty:
+    
+        expense_df["amount"] = pd.to_numeric(
+            expense_df["amount"],
+            errors="coerce"
+        ).fillna(0)
+    
+        expense_df["date"] = pd.to_datetime(
+            expense_df["date"],
+            errors="coerce"
+        )
+    
+        # Remove invalid dates
+        expense_df = expense_df.dropna(subset=["date"])
+    
+        # Filter by dashboard date
+        expense_df = expense_df[
+            (expense_df["date"] >= pd.to_datetime(start_date)) &
+            (expense_df["date"] <= pd.to_datetime(end_date))
+        ]
+    
+        vehicle_expense_total = expense_df["amount"].sum()        
         else:
             vehicle_expense_total = 0
 
@@ -1554,11 +1563,11 @@ def page_vehicle_report():
 
     # ---------------- Final Calculation ----------------
     total_cost = (
-        total_salary
-        + total_platform
-        + running_cost
-        + vehicle_expense_total
-        + donations_total
+        total_driver_salary
+        + total_platform_fee
+        + vehicle_running_cost
+        + total_variable
+        + monthly_depreciation
     )
     net_profit = total_revenue - total_cost
 
@@ -1916,6 +1925,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

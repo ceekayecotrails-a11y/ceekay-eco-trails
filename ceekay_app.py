@@ -110,6 +110,7 @@ drivers_sheet = file.worksheet("drivers")
 daily_sheet = file.worksheet("daily_reports")
 vehicle_master_sheet = file.worksheet("vehicle_master")
 vehicle_variable_sheet = file.worksheet("vehicle_variable_costs")
+donations_sheet = file.worksheet("donations")
 
 drivers_df = pd.DataFrame(drivers_sheet.get_all_records())
 
@@ -1002,6 +1003,52 @@ def page_admin_dashboard():
         )
         total_platform = df["platform_fee"].sum()
 
+        # -----------------------------
+        # LOAD DONATIONS
+        # -----------------------------
+        donation_df = pd.DataFrame(donations_sheet.get_all_records())
+        
+        if not donation_df.empty:
+        
+            donation_df["date"] = pd.to_datetime(donation_df["date"], errors="coerce")
+        
+            donation_df = donation_df[
+                (donation_df["date"] >= pd.to_datetime(start_date)) &
+                (donation_df["date"] <= pd.to_datetime(end_date))
+            ]
+        
+            donation_df["amount"] = pd.to_numeric(
+                donation_df["amount"], errors="coerce"
+            ).fillna(0)
+        
+            donations_total = donation_df["amount"].sum()
+        
+        else:
+            donations_total = 0
+
+        # -----------------------------
+        # VEHICLE EXPENSES
+        # -----------------------------
+        expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+        
+        if not expense_df.empty:
+        
+            expense_df["date"] = pd.to_datetime(expense_df["date"], errors="coerce")
+        
+            expense_df = expense_df[
+                (expense_df["date"] >= pd.to_datetime(start_date)) &
+                (expense_df["date"] <= pd.to_datetime(end_date))
+            ]
+        
+            expense_df["amount"] = pd.to_numeric(
+                expense_df["amount"], errors="coerce"
+            ).fillna(0)
+        
+            vehicle_expense_total = expense_df["amount"].sum()
+        
+        else:
+            vehicle_expense_total = 0
+
         # Load vehicle cost per km
         df["vehicle_running_cost"] = pd.to_numeric(
             df.get("vehicle_running_cost", 0),
@@ -1010,8 +1057,16 @@ def page_admin_dashboard():
 
         running_cost = df["vehicle_running_cost"].sum()
         total_mileage = df["daily_mileage"].sum()
-        total_cost = total_salary + total_platform + running_cost
-        net_profit = total_revenue - total_cost
+        
+        total_cost = (
+            total_salary
+            + total_platform
+            + running_cost
+            + vehicle_expense_total
+            + donations_total
+        )
+
+net_profit = total_revenue - total_cost
 
         if total_mileage > 0:
             profit_per_km = net_profit / total_mileage
@@ -1882,6 +1937,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

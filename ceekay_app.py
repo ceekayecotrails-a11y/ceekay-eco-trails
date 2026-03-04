@@ -1055,7 +1055,7 @@ def page_admin_dashboard():
         ]
     
         vehicle_expense_total = expense_df["amount"].sum()        
-        else:
+            else:
             vehicle_expense_total = 0
 
         # Load vehicle cost per km
@@ -1925,6 +1925,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

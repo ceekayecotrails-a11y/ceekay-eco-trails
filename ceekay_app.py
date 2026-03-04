@@ -1045,16 +1045,14 @@ def page_admin_dashboard():
             errors="coerce"
         )
     
-        # Remove invalid dates
         expense_df = expense_df.dropna(subset=["date"])
     
-        # Filter by dashboard date
         expense_df = expense_df[
             (expense_df["date"] >= pd.to_datetime(start_date)) &
             (expense_df["date"] <= pd.to_datetime(end_date))
         ]
     
-        vehicle_expense_total = expense_df["amount"].sum()        
+        vehicle_expense_total = expense_df["amount"].sum()
             else:
             vehicle_expense_total = 0
 
@@ -1925,6 +1923,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

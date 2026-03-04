@@ -1085,8 +1085,38 @@ net_profit = total_revenue - total_cost
         fig = px.line(daily_trend, x="date", y="fare", title="Revenue Trend", markers=True)
         st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("---")
-    st.subheader("💰 Revenue Distribution")
+
+        st.markdown("---")
+        st.subheader("💰 Revenue Usage")
+        
+        distribution_df = pd.DataFrame({
+            "Category": [
+                "Driver Salary",
+                "Platform Fee",
+                "Running Cost",
+                "Vehicle Expenses",
+                "Donations",
+                "Net Profit"
+            ],
+            "Amount": [
+                total_salary,
+                total_platform,
+                running_cost,
+                vehicle_expense_total,
+                donations_total,
+                net_profit
+            ]
+        })
+        
+        fig2 = px.pie(
+            distribution_df,
+            names="Category",
+            values="Amount",
+            title="Revenue Usage (%)",
+            hole=0.45
+        )
+        
+        st.plotly_chart(fig2, use_container_width=True)
     
     # -----------------------------
     # LOAD VEHICLE VARIABLE COSTS
@@ -1575,15 +1605,16 @@ def page_vehicle_report():
 
     # ---------------- Final Calculation ----------------
     total_cost = (
-        total_driver_salary
-        + vehicle_running_cost
-        + total_variable
-        + total_platform_fee
-        + monthly_depreciation
+        total_salary
+        + total_platform
+        + running_cost
+        + vehicle_expense_total
+        + donations_total
     )
 
     net_profit = total_revenue - total_cost
 
+   
     # ---------------- Display ----------------
     st.metric("Total Revenue", f"Rs. {total_revenue:,.2f}")
     st.metric("Total Cost", f"Rs. {total_cost:,.2f}")
@@ -1937,6 +1968,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

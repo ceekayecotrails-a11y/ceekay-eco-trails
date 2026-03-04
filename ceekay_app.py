@@ -1026,35 +1026,35 @@ def page_admin_dashboard():
         else:
             donations_total = 0
 
-    # -----------------------------
-    # VEHICLE EXPENSES
-    # -----------------------------
-    expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
-    
-    vehicle_expense_total = 0
-    
-    if not expense_df.empty:
-    
-        expense_df["amount"] = pd.to_numeric(
-            expense_df["amount"],
-            errors="coerce"
-        ).fillna(0)
-    
-        expense_df["date"] = pd.to_datetime(
-            expense_df["date"],
-            errors="coerce"
-        )
-    
-        expense_df = expense_df.dropna(subset=["date"])
-    
-        expense_df = expense_df[
-            (expense_df["date"] >= pd.to_datetime(start_date)) &
-            (expense_df["date"] <= pd.to_datetime(end_date))
-        ]
-    
-        vehicle_expense_total = expense_df["amount"].sum()
-        else:
+        # -----------------------------
+        # VEHICLE EXPENSES
+        # -----------------------------
+        expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+        
         vehicle_expense_total = 0
+        
+        if not expense_df.empty:
+        
+            expense_df["amount"] = pd.to_numeric(
+                expense_df["amount"],
+                errors="coerce"
+            ).fillna(0)
+        
+            expense_df["date"] = pd.to_datetime(
+                expense_df["date"],
+                errors="coerce"
+            )
+        
+            expense_df = expense_df.dropna(subset=["date"])
+        
+            expense_df = expense_df[
+                (expense_df["date"] >= pd.to_datetime(start_date)) &
+                (expense_df["date"] <= pd.to_datetime(end_date))
+            ]
+        
+            vehicle_expense_total = expense_df["amount"].sum()
+        else:
+            vehicle_expense_total = 0
 
         # Load vehicle cost per km
         df["vehicle_running_cost"] = pd.to_numeric(
@@ -1923,6 +1923,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

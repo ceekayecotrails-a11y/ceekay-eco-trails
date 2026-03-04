@@ -613,6 +613,61 @@ def page_driver_dashboard(driver):
     st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("---")
+    st.subheader("💰 Revenue Distribution")
+    
+    # -----------------------------
+    # LOAD VEHICLE VARIABLE COSTS
+    # -----------------------------
+    expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+    
+    category_costs = {}
+    
+    if not expense_df.empty:
+    
+        expense_df["amount"] = pd.to_numeric(
+            expense_df["amount"], errors="coerce"
+        ).fillna(0)
+    
+        category_group = expense_df.groupby("category")["amount"].sum()
+    
+        for cat, value in category_group.items():
+            category_costs[cat] = value
+    
+    # -----------------------------
+    # BASE COSTS
+    # -----------------------------
+    base_costs = {
+        "Driver Salary": total_salary,
+        "Platform Fee": total_platform,
+        "Running Cost": running_cost
+    }
+    
+    # Combine all
+    all_costs = {**base_costs, **category_costs}
+    
+    # Add Net Profit
+    all_costs["Net Profit"] = net_profit
+    
+    # Convert to dataframe
+    distribution_df = pd.DataFrame({
+        "Category": list(all_costs.keys()),
+        "Amount": list(all_costs.values())
+    })
+    
+    # -----------------------------
+    # PIE CHART
+    # -----------------------------
+    fig2 = px.pie(
+        distribution_df,
+        names="Category",
+        values="Amount",
+        title="Revenue Breakdown (%)",
+        hole=0.45
+    )
+    
+    st.plotly_chart(fig2, use_container_width=True)
+
+    st.markdown("---")
     st.subheader("Top Driver of the Month")
 
     df_all = pd.DataFrame(daily_sheet.get_all_records())
@@ -1826,6 +1881,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

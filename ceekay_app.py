@@ -594,68 +594,65 @@ def page_driver_dashboard(driver):
     )
 
     st.plotly_chart(fig, use_container_width=True)
-    
+
     st.markdown("---")
-st.subheader("🏆 Top Driver of the Month")
+    st.subheader("🏆 Top Driver of the Month")
 
-df_all = pd.DataFrame(daily_sheet.get_all_records())
+    df_all = pd.DataFrame(daily_sheet.get_all_records())
 
-if not df_all.empty:
+    if not df_all.empty:
 
-    df_all["date"] = pd.to_datetime(df_all["date"], errors="coerce")
+        df_all["date"] = pd.to_datetime(df_all["date"], errors="coerce")
 
-    df_all = df_all[df_all["status"] == "Correct"]
+        df_all = df_all[df_all["status"] == "Correct"]
 
-    df_all["driver_salary"] = pd.to_numeric(df_all["driver_salary"], errors="coerce").fillna(0)
-    df_all["tip"] = pd.to_numeric(df_all["tip"], errors="coerce").fillna(0)
+        df_all["driver_salary"] = pd.to_numeric(df_all["driver_salary"], errors="coerce").fillna(0)
+        df_all["tip"] = pd.to_numeric(df_all["tip"], errors="coerce").fillna(0)
 
-    df_all["earnings"] = df_all["driver_salary"] + df_all["tip"]
+        df_all["earnings"] = df_all["driver_salary"] + df_all["tip"]
 
-    current_month = datetime.today().strftime("%Y-%m")
-    df_all["month"] = df_all["date"].dt.strftime("%Y-%m")
+        current_month = datetime.today().strftime("%Y-%m")
+        df_all["month"] = df_all["date"].dt.strftime("%Y-%m")
 
-    df_month = df_all[df_all["month"] == current_month]
+        df_month = df_all[df_all["month"] == current_month]
 
-    if not df_month.empty:
+        if not df_month.empty:
 
-        leaderboard = (
-            df_month.groupby("driver_name")["earnings"]
-            .sum()
-            .reset_index()
-            .sort_values("earnings", ascending=False)
-        )
+            leaderboard = (
+                df_month.groupby("driver_name")["earnings"]
+                .sum()
+                .reset_index()
+                .sort_values("earnings", ascending=False)
+            )
 
-        leaderboard["rank"] = leaderboard["earnings"].rank(method="min", ascending=False)
+            leaderboard["rank"] = leaderboard["earnings"].rank(method="min", ascending=False)
+            leaderboard = leaderboard.sort_values("rank")
 
-        leaderboard = leaderboard.sort_values("rank")
+            # Top Driver
+            top_driver = leaderboard.iloc[0]
 
-        # Top Driver
-        top_driver = leaderboard.iloc[0]
+            st.success(f"🏆 Top Driver This Month: {top_driver['driver_name']}")
 
-        st.success(f"🏆 Top Driver This Month: {top_driver['driver_name']}")
+            # Current driver's rank
+            my_row = leaderboard[leaderboard["driver_name"] == driver["driver_name"]]
 
-        # Current driver's rank
-        my_row = leaderboard[leaderboard["driver_name"] == driver["driver_name"]]
+            if not my_row.empty:
+                my_rank = int(my_row.iloc[0]["rank"])
+                st.info(f"⭐ Your Rank This Month: #{my_rank}")
 
-        if not my_row.empty:
-            my_rank = int(my_row.iloc[0]["rank"])
-            st.info(f"⭐ Your Rank This Month: #{my_rank}")
+            st.markdown("### Monthly Leaderboard")
 
-        # Show leaderboard without earnings
-        st.markdown("### Monthly Leaderboard")
+            display_board = leaderboard[["rank", "driver_name"]].rename(
+                columns={
+                    "rank": "Rank",
+                    "driver_name": "Driver"
+                }
+            )
 
-        display_board = leaderboard[["rank", "driver_name"]].rename(
-            columns={
-                "rank": "Rank",
-                "driver_name": "Driver"
-            }
-        )
+            st.dataframe(display_board)
 
-        st.dataframe(display_board)
-
-    else:
-        st.info("No earnings recorded this month yet.")
-
+        else:
+            st.info("No earnings recorded this month yet.")
 
 # -------------------------------------------------------------------
 # EARNINGS REPORT (Daily + Date Range)
@@ -1812,6 +1809,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

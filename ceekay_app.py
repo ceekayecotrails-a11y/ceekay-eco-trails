@@ -1053,8 +1053,8 @@ def page_admin_dashboard():
         ]
     
         vehicle_expense_total = expense_df["amount"].sum()
-            else:
-            vehicle_expense_total = 0
+        else:
+        vehicle_expense_total = 0
 
         # Load vehicle cost per km
         df["vehicle_running_cost"] = pd.to_numeric(
@@ -1923,6 +1923,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

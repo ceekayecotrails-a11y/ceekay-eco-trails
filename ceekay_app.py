@@ -1553,15 +1553,14 @@ def page_vehicle_report():
     vehicle_running_cost = total_mileage * cost_per_km
 
     # ---------------- Final Calculation ----------------
-        total_cost = (
-            total_salary
-            + total_platform
-            + running_cost
-            + vehicle_expense_total
-            + donations_total
-        )
-    
-        net_profit = total_revenue - total_cost
+    total_cost = (
+        total_salary
+        + total_platform
+        + running_cost
+        + vehicle_expense_total
+        + donations_total
+    )
+    net_profit = total_revenue - total_cost
 
    
     # ---------------- Display ----------------
@@ -1917,6 +1916,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

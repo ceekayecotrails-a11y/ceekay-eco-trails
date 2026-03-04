@@ -538,51 +538,68 @@ def page_driver_dashboard(driver):
     weekly = df.groupby("week")["earnings"].sum().reset_index()
     best_week = weekly.loc[weekly["earnings"].idxmax()]
 
-    # --------------------------------
-    # DISPLAY
-    # --------------------------------
+    # =====================================================
+    # DRIVER DASHBOARD UI v2
+    # =====================================================
 
-    st.subheader("Attendance")
+    st.markdown("## 🚀 Performance Overview")
 
-    c1, c2 = st.columns(2)
-    c1.metric("Days Worked", days_worked)
-    c2.metric("Days Absent", days_absent)
+    col1, col2, col3, col4 = st.columns(4)
 
-    st.subheader("Mileage")
+    col1.metric("🟢 Days Worked", days_worked)
+    col2.metric("🔴 Days Absent", days_absent)
+    col3.metric("⭐ Avg Per Day", f"Rs {avg_per_day:,.0f}")
+    col4.metric("🏆 Best Week", f"Week {int(best_week['week'])}")
 
-    c3, c4, c5 = st.columns(3)
-    c3.metric("Total Mileage", f"{total_mileage} km")
-    c4.metric("Uber Mileage", f"{uber_mileage} km")
-    c5.metric("Loss Mileage", f"{loss_mileage} km")
+    st.markdown("---")
 
-    st.subheader("Earnings")
+    # =====================================================
+    # MILEAGE SECTION
+    # =====================================================
 
-    c6, c7, c8 = st.columns(3)
-    c6.metric("Driver Salary", f"Rs {total_salary:,.2f}")
-    c7.metric("Total Tips", f"Rs {total_tips:,.2f}")
-    c8.metric("Total Earnings", f"Rs {total_earnings:,.2f}")
+    st.markdown("## 🚗 Mileage Summary")
 
-    st.subheader("Performance")
+    m1, m2, m3 = st.columns(3)
 
-    c9, c10 = st.columns(2)
-    c9.metric("⭐ Average Per Day", f"Rs {avg_per_day:,.2f}")
-    c10.metric("🏆 Best Week", f"Week {int(best_week['week'])} | Rs {best_week['earnings']:,.2f}")
+    m1.metric("Total Mileage", f"{total_mileage:,.0f} km")
+    m2.metric("Uber Mileage", f"{uber_mileage:,.0f} km")
+    m3.metric("Loss Mileage", f"{loss_mileage:,.0f} km")
 
-    st.subheader("Records")
+    st.markdown("---")
 
-    c11, c12 = st.columns(2)
-    c11.metric(
-        "Highest Earning Day",
-        f"Rs {highest['earnings']:,.2f}",
+    # =====================================================
+    # EARNINGS SECTION
+    # =====================================================
+
+    st.markdown("## 💰 Earnings Summary")
+
+    e1, e2, e3 = st.columns(3)
+
+    e1.metric("Driver Salary", f"Rs {total_salary:,.0f}")
+    e2.metric("Tips", f"Rs {total_tips:,.0f}")
+    e3.metric("Total Earnings", f"Rs {total_earnings:,.0f}")
+
+    st.markdown("---")
+
+    # =====================================================
+    # RECORDS
+    # =====================================================
+
+    st.markdown("## 🏅 Personal Records")
+
+    r1, r2 = st.columns(2)
+
+    r1.metric(
+        "🏆 Highest Earning Day",
+        f"Rs {highest['earnings']:,.0f}",
         highest["date"].strftime("%Y-%m-%d")
     )
 
-    c12.metric(
-        "Lowest Earning Day",
-        f"Rs {lowest['earnings']:,.2f}",
+    r2.metric(
+        "📉 Lowest Earning Day",
+        f"Rs {lowest['earnings']:,.0f}",
         lowest["date"].strftime("%Y-%m-%d")
     )
-
     st.subheader("Earnings Trend")
 
     fig = px.line(
@@ -1809,6 +1826,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

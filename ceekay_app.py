@@ -1679,8 +1679,7 @@ if st.session_state.get("page") == "driver":
         elif page == "Daily Report":
             st.error("You cannot submit a new report until admin confirms your last report.")
 
-        # elif page == "My Summary":
-#     page_driver_summary(driver)
+
 
 
         elif page == "Earnings Report":
@@ -1693,28 +1692,26 @@ if st.session_state.get("page") == "driver":
             st.rerun()
 
     if status == "Correct" or status == "No Reports":
-
+    
         st.success("Have a good day. The vehicle is ready for today")
-
+    
         page = sidebar_menu("driver")
-
-        if page == "Home":
-            st.success(f"Welcome {driver['driver_name']}!")
-
+    
+        if page == "Dashboard":
+            page_driver_dashboard(driver)
+    
         elif page == "Daily Report":
             page_driver_form(driver)
-
-        elif page == "My Summary":
-            page_driver_summary(driver)
-
+    
         elif page == "Earnings Report":
             page_earnings_report("driver", driver)
-
+    
         elif page == "Logout":
             st.session_state.page = None
             st.session_state.driver = None
             st.session_state.driver_status = None
             st.rerun()
+       
 
 # ADMIN LOGIN
 if menu == "Admin":
@@ -1753,6 +1750,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

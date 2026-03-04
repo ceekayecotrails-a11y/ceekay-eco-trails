@@ -167,7 +167,7 @@ def sidebar_menu(user_type):
     if user_type == "driver":
         return st.sidebar.radio(
             "",
-            ["Home", "Daily Report", "Earnings Report", "Logout"],
+            ["Dashboard", "Daily Report", "Earnings Report", "Logout"],
             format_func=lambda x: f"{icons[x]} {x}"
         )
 
@@ -455,6 +455,145 @@ def page_driver_summary(driver):
 
     df = df.sort_values("date", ascending=False)
     st.dataframe(df)
+
+# -------------------------------------------------------------------
+# DRIVER DASHBOARD
+# -------------------------------------------------------------------
+def page_driver_dashboard(driver):
+
+    st.markdown("<div class='title-text'>📊 Driver Dashboard</div>", unsafe_allow_html=True)
+
+    df = pd.DataFrame(daily_sheet.get_all_records())
+
+    if df.empty:
+        st.info("No data available")
+        return
+
+    df["date"] = pd.to_datetime(df["date"])
+
+    # Driver filter
+    df = df[
+        (df["driver_name"] == driver["driver_name"]) &
+        (df["status"] == "Correct")
+    ]
+
+    if df.empty:
+        st.warning("No approved reports yet.")
+        return
+
+    # Convert numeric
+    cols = [
+        "daily_mileage",
+        "uber_hire_mileage",
+        "loss_mileage",
+        "driver_salary",
+        "tip"
+    ]
+
+    for c in cols:
+        df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
+
+    # Date filter
+    col1, col2 = st.columns(2)
+
+    start_date = col1.date_input("From Date", df["date"].min())
+    end_date = col2.date_input("To Date", df["date"].max())
+
+    df = df[
+        (df["date"] >= pd.to_datetime(start_date)) &
+        (df["date"] <= pd.to_datetime(end_date))
+    ]
+
+    if df.empty:
+        st.info("No records for selected dates")
+        return
+
+    # Earnings column
+    df["earnings"] = df["driver_salary"] + df["tip"]
+
+    # Attendance
+    days_worked = df["date"].nunique()
+    total_days = (end_date - start_date).days + 1
+    days_absent = total_days - days_worked
+
+    # Mileage
+    total_mileage = df["daily_mileage"].sum()
+    uber_mileage = df["uber_hire_mileage"].sum()
+    loss_mileage = df["loss_mileage"].sum()
+
+    # Earnings totals
+    total_salary = df["driver_salary"].sum()
+    total_tips = df["tip"].sum()
+    total_earnings = df["earnings"].sum()
+
+    # Average per day
+    avg_per_day = total_earnings / days_worked if days_worked > 0 else 0
+
+    # Highest & lowest day
+    highest = df.loc[df["earnings"].idxmax()]
+    lowest = df.loc[df["earnings"].idxmin()]
+
+    # Best week
+    df["week"] = df["date"].dt.isocalendar().week
+    weekly = df.groupby("week")["earnings"].sum().reset_index()
+    best_week = weekly.loc[weekly["earnings"].idxmax()]
+
+    # --------------------------------
+    # DISPLAY
+    # --------------------------------
+
+    st.subheader("Attendance")
+
+    c1, c2 = st.columns(2)
+    c1.metric("Days Worked", days_worked)
+    c2.metric("Days Absent", days_absent)
+
+    st.subheader("Mileage")
+
+    c3, c4, c5 = st.columns(3)
+    c3.metric("Total Mileage", f"{total_mileage} km")
+    c4.metric("Uber Mileage", f"{uber_mileage} km")
+    c5.metric("Loss Mileage", f"{loss_mileage} km")
+
+    st.subheader("Earnings")
+
+    c6, c7, c8 = st.columns(3)
+    c6.metric("Driver Salary", f"Rs {total_salary:,.2f}")
+    c7.metric("Total Tips", f"Rs {total_tips:,.2f}")
+    c8.metric("Total Earnings", f"Rs {total_earnings:,.2f}")
+
+    st.subheader("Performance")
+
+    c9, c10 = st.columns(2)
+    c9.metric("⭐ Average Per Day", f"Rs {avg_per_day:,.2f}")
+    c10.metric("🏆 Best Week", f"Week {int(best_week['week'])} | Rs {best_week['earnings']:,.2f}")
+
+    st.subheader("Records")
+
+    c11, c12 = st.columns(2)
+    c11.metric(
+        "Highest Earning Day",
+        f"Rs {highest['earnings']:,.2f}",
+        highest["date"].strftime("%Y-%m-%d")
+    )
+
+    c12.metric(
+        "Lowest Earning Day",
+        f"Rs {lowest['earnings']:,.2f}",
+        lowest["date"].strftime("%Y-%m-%d")
+    )
+
+    st.subheader("Earnings Trend")
+
+    fig = px.line(
+        df,
+        x="date",
+        y="earnings",
+        markers=True,
+        title="Daily Earnings"
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
 
 # -------------------------------------------------------------------
 # EARNINGS REPORT (Daily + Date Range)
@@ -1534,8 +1673,8 @@ if st.session_state.get("page") == "driver":
 
         page = sidebar_menu("driver")
 
-        if page == "Home":
-            st.success(f"Welcome {driver['driver_name']}!")
+        if page == "Dashboard":
+            page_driver_dashboard(driver)
 
         elif page == "Daily Report":
             st.error("You cannot submit a new report until admin confirms your last report.")
@@ -1614,6 +1753,7 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+
 
 
 

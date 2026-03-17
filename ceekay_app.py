@@ -1587,6 +1587,7 @@ def page_vehicle_entry():
                 "Service",
                 "License",
                 "GPS",
+                "Donations",
                 "Other"
             ]
 

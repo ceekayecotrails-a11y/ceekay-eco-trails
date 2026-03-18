@@ -1030,7 +1030,6 @@ def page_admin_dashboard():
         fig = px.line(daily_trend, x="date", y="fare", title="Revenue Trend", markers=True)
         st.plotly_chart(fig, use_container_width=True)
 
-    st.metric("Net Profit", f"Rs {net_profit:,.0f}")
 
         
     # ---------------------------------

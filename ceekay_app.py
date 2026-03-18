@@ -1030,6 +1030,87 @@ def page_admin_dashboard():
         fig = px.line(daily_trend, x="date", y="fare", title="Revenue Trend", markers=True)
         st.plotly_chart(fig, use_container_width=True)
 
+        
+    # ---------------------------------
+    # 💰 REVENUE BREAKDOWN PIE CHART
+    # ---------------------------------
+    
+    st.markdown("---")
+    st.subheader("💰 Revenue Breakdown")
+    
+    # -----------------------------
+    # VEHICLE EXPENSES (VARIABLE)
+    # -----------------------------
+    vehicle_expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+    
+    vehicle_expense_total = 0
+    
+    if not vehicle_expense_df.empty:
+        vehicle_expense_df["amount"] = pd.to_numeric(
+            vehicle_expense_df["amount"],
+            errors="coerce"
+        ).fillna(0)
+    
+        vehicle_expense_total = vehicle_expense_df["amount"].sum()
+    
+    # -----------------------------
+    # RUNNING COST (ALREADY IN YOUR DATA)
+    # -----------------------------
+    df["vehicle_running_cost"] = pd.to_numeric(
+        df.get("vehicle_running_cost", 0),
+        errors="coerce"
+    ).fillna(0)
+    
+    running_cost = df["vehicle_running_cost"].sum()
+    
+    # -----------------------------
+    # MAIN VALUES
+    # -----------------------------
+    driver_salary = df["driver_salary"].sum()
+    platform_fee = df["platform_fee"].sum()
+    total_revenue = df["fare"].sum()
+    
+    total_cost = (
+        driver_salary
+        + platform_fee
+        + running_cost
+        + vehicle_expense_total
+    )
+    
+    net_profit = total_revenue - total_cost
+    
+    # -----------------------------
+    # PIE DATA
+    # -----------------------------
+    pie_data = pd.DataFrame({
+        "Category": [
+            "Driver Salary",
+            "Platform Fee",
+            "Running Cost",
+            "Vehicle Expenses",
+            "Profit"
+        ],
+        "Amount": [
+            driver_salary,
+            platform_fee,
+            running_cost,
+            vehicle_expense_total,
+            net_profit
+        ]
+    })
+    
+    # -----------------------------
+    # PIE CHART
+    # -----------------------------
+    fig_pie = px.pie(
+        pie_data,
+        names="Category",
+        values="Amount",
+        hole=0.4
+    )
+    
+    st.plotly_chart(fig_pie, use_container_width=True)
+
 
     # =====================================================
     # TAB 2 — VEHICLE PERFORMANCE

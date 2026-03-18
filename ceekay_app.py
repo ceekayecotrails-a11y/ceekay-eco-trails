@@ -1030,6 +1030,109 @@ def page_admin_dashboard():
         fig = px.line(daily_trend, x="date", y="fare", title="Revenue Trend", markers=True)
         st.plotly_chart(fig, use_container_width=True)
 
+        # ---------------------------------
+        # 💰 REVENUE BREAKDOWN PIE CHART
+        # ---------------------------------
+        
+        st.subheader("💰 Revenue Breakdown")
+        
+        import plotly.express as px
+        
+        # -----------------------------
+        # LOAD VEHICLE DATA
+        # -----------------------------
+        vehicle_df = pd.DataFrame(vehicle_sheet.get_all_records())
+        
+        # Merge cost_per_km into main dataframe
+        df = df.merge(
+            vehicle_df[["vehicle_number", "cost_per_km"]],
+            on="vehicle_number",
+            how="left"
+        )
+        
+        # -----------------------------
+        # SAFE CONVERSIONS
+        # -----------------------------
+        df["fare"] = pd.to_numeric(df["fare"], errors="coerce").fillna(0)
+        df["driver_salary"] = pd.to_numeric(df["driver_salary"], errors="coerce").fillna(0)
+        df["platform_fee"] = pd.to_numeric(df["platform_fee"], errors="coerce").fillna(0)
+        df["daily_mileage"] = pd.to_numeric(df["daily_mileage"], errors="coerce").fillna(0)
+        df["cost_per_km"] = pd.to_numeric(df["cost_per_km"], errors="coerce").fillna(0)
+        
+        # -----------------------------
+        # CALCULATIONS
+        # -----------------------------
+        
+        # Revenue
+        total_revenue = df["fare"].sum()
+        
+        # Costs
+        driver_salary = df["driver_salary"].sum()
+        platform_fee = df["platform_fee"].sum()
+        
+        # Running Cost (from vehicle sheet)
+        df["running_cost"] = df["daily_mileage"] * df["cost_per_km"]
+        running_cost = df["running_cost"].sum()
+        
+        # -----------------------------
+        # VEHICLE VARIABLE EXPENSES
+        # -----------------------------
+        vehicle_expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+        
+        vehicle_expense_total = 0
+        
+        if not vehicle_expense_df.empty:
+            vehicle_expense_df["amount"] = pd.to_numeric(
+                vehicle_expense_df["amount"],
+                errors="coerce"
+            ).fillna(0)
+        
+            vehicle_expense_total = vehicle_expense_df["amount"].sum()
+        
+        # -----------------------------
+        # TOTAL COST & PROFIT
+        # -----------------------------
+        total_cost = (
+            driver_salary
+            + platform_fee
+            + running_cost
+            + vehicle_expense_total
+        )
+        
+        net_profit = total_revenue - total_cost
+        
+        # -----------------------------
+        # PIE DATA
+        # -----------------------------
+        pie_data = pd.DataFrame({
+            "Category": [
+                "Driver Salary",
+                "Platform Fee",
+                "Running Cost",
+                "Vehicle Expenses",
+                "Profit"
+            ],
+            "Amount": [
+                driver_salary,
+                platform_fee,
+                running_cost,
+                vehicle_expense_total,
+                net_profit
+            ]
+        })
+        
+        # -----------------------------
+        # PIE CHART
+        # -----------------------------
+        fig_pie = px.pie(
+            pie_data,
+            names="Category",
+            values="Amount",
+            hole=0.4
+        )
+        
+        st.plotly_chart(fig_pie, use_container_width=True)
+
     # =====================================================
     # TAB 2 — VEHICLE PERFORMANCE
     # =====================================================

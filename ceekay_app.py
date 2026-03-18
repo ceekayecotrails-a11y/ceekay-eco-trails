@@ -1080,14 +1080,17 @@ def page_admin_dashboard():
     net_profit = total_revenue - total_cost
     
     # -----------------------------
-    # PIE DATA
+    # FIX NEGATIVE / ZERO VALUES
     # -----------------------------
+    display_profit = net_profit if net_profit > 0 else 0
+    
     pie_data = pd.DataFrame({
         "Category": [
             "Driver Salary",
             "Platform Fee",
             "Running Cost",
             "Vehicle Expenses",
+            "Other Expenses",
             "Profit"
         ],
         "Amount": [
@@ -1095,7 +1098,8 @@ def page_admin_dashboard():
             platform_fee,
             running_cost,
             vehicle_expense_total,
-            net_profit
+            other_expense_total,
+            display_profit
         ]
     })
     

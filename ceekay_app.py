@@ -1090,7 +1090,6 @@ def page_admin_dashboard():
             "Platform Fee",
             "Running Cost",
             "Vehicle Expenses",
-            "Other Expenses",
             "Profit"
         ],
         "Amount": [
@@ -1098,7 +1097,6 @@ def page_admin_dashboard():
             platform_fee,
             running_cost,
             vehicle_expense_total,
-            other_expense_total,
             display_profit
         ]
     })

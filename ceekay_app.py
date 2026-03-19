@@ -958,7 +958,7 @@ def page_admin_dashboard():
         # SERVICE ALERT SECTION
         # =====================================================
     
-        st.markdown("##Service Alerts")
+        st.markdown("## Service Alerts")
         
         vehicle_data = get_vehicle_service_data()
         

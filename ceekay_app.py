@@ -948,45 +948,45 @@ def page_admin_dashboard():
         "🚗 Vehicle Details"
     ])
 
-        # =====================================================
-        # SERVICE ALERT SECTION
-        # =====================================================
+    # =====================================================
+    # SERVICE ALERT SECTION
+    # =====================================================
     
-        st.markdown("## Service Alerts")
+    st.markdown("## Service Alerts")
         
-        vehicle_data = get_vehicle_service_data()
+    vehicle_data = get_vehicle_service_data()
         
-        if vehicle_data.empty:
-            st.info("No vehicle data available.")
+    if vehicle_data.empty:
+        st.info("No vehicle data available.")
+    else:
+        
+        alerts = []
+        
+        for _, row in vehicle_data.iterrows():
+        
+            current = row["current_mileage"]
+        
+            if row["alignment_interval_km"] > 0:
+        
+                if current >= row["next_alignment"]:
+                    alerts.append(f"🔴 {row['vehicle_no']} - Wheel Alignment OVERDUE")
+        
+                elif current >= row["next_alignment"] - 500:
+                    alerts.append(f"🟡 {row['vehicle_no']} - Wheel Alignment Due Soon")
+        
+            if row["air_filter_interval_km"] > 0:
+        
+                if current >= row["next_air_filter"]:
+                    alerts.append(f"🔴 {row['vehicle_no']} - Air Filter OVERDUE")
+        
+                elif current >= row["next_air_filter"] - 1000:
+                    alerts.append(f"🟡 {row['vehicle_no']} - Air Filter Due Soon")
+        
+        if alerts:
+            for alert in alerts:
+                st.warning(alert)
         else:
-        
-            alerts = []
-        
-            for _, row in vehicle_data.iterrows():
-        
-                current = row["current_mileage"]
-        
-                if row["alignment_interval_km"] > 0:
-        
-                    if current >= row["next_alignment"]:
-                        alerts.append(f"🔴 {row['vehicle_no']} - Wheel Alignment OVERDUE")
-        
-                    elif current >= row["next_alignment"] - 500:
-                        alerts.append(f"🟡 {row['vehicle_no']} - Wheel Alignment Due Soon")
-        
-                if row["air_filter_interval_km"] > 0:
-        
-                    if current >= row["next_air_filter"]:
-                        alerts.append(f"🔴 {row['vehicle_no']} - Air Filter OVERDUE")
-        
-                    elif current >= row["next_air_filter"] - 1000:
-                        alerts.append(f"🟡 {row['vehicle_no']} - Air Filter Due Soon")
-        
-            if alerts:
-                for alert in alerts:
-                    st.warning(alert)
-            else:
-                st.success("All vehicles are service-ready ✅")
+            st.success("All vehicles are service-ready ✅")
     
     # =====================================================
     # TAB 1 — BUSINESS OVERVIEW

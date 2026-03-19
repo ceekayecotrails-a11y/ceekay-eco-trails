@@ -1114,6 +1114,111 @@ def page_admin_dashboard():
     
     st.plotly_chart(fig_pie, use_container_width=True)
 
+    st.markdown("---")
+    st.subheader("🚗 Net Profit by Vehicle")
+    
+    # ---------------------------------
+    # PREPARE DATA
+    # ---------------------------------
+    df_vehicle = df.copy()
+    
+    # Ensure numeric
+    cols = ["fare", "driver_salary", "platform_fee", "vehicle_running_cost", "tip", "toll_fee"]
+    for c in cols:
+        if c in df_vehicle.columns:
+            df_vehicle[c] = pd.to_numeric(df_vehicle[c], errors="coerce").fillna(0)
+    
+    # ---------------------------------
+    # LOAD VEHICLE EXPENSES
+    # ---------------------------------
+    vehicle_expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+    
+    if not vehicle_expense_df.empty:
+        vehicle_expense_df["amount"] = pd.to_numeric(
+            vehicle_expense_df["amount"],
+            errors="coerce"
+        ).fillna(0)
+    
+    # ---------------------------------
+    # GROUP VEHICLE DATA
+    # ---------------------------------
+    vehicle_summary = df_vehicle.groupby("vehicle_no").agg({
+        "fare": "sum",
+        "driver_salary": "sum",
+        "platform_fee": "sum",
+        "vehicle_running_cost": "sum",
+        "tip": "sum",
+        "toll_fee": "sum"
+    }).reset_index()
+    
+    # ---------------------------------
+    # ADD VEHICLE EXPENSES (REPAIRS)
+    # ---------------------------------
+    if not vehicle_expense_df.empty:
+    
+        vehicle_expense_summary = (
+            vehicle_expense_df.groupby("vehicle_no")["amount"]
+            .sum()
+            .reset_index()
+            .rename(columns={"amount": "vehicle_expense"})
+        )
+    
+        vehicle_summary = vehicle_summary.merge(
+            vehicle_expense_summary,
+            on="vehicle_no",
+            how="left"
+        )
+    
+        vehicle_summary["vehicle_expense"] = vehicle_summary["vehicle_expense"].fillna(0)
+    
+    else:
+        vehicle_summary["vehicle_expense"] = 0
+    
+    # ---------------------------------
+    # CALCULATE REAL DRIVER COST
+    # ---------------------------------
+    vehicle_summary["real_driver_cost"] = (
+        vehicle_summary["driver_salary"]
+        + vehicle_summary["tip"]
+        + vehicle_summary["toll_fee"]
+    )
+    
+    # ---------------------------------
+    # TOTAL COST PER VEHICLE
+    # ---------------------------------
+    vehicle_summary["total_cost"] = (
+        vehicle_summary["real_driver_cost"]
+        + vehicle_summary["platform_fee"]
+        + vehicle_summary["vehicle_running_cost"]
+        + vehicle_summary["vehicle_expense"]
+    )
+    
+    # ---------------------------------
+    # NET PROFIT PER VEHICLE
+    # ---------------------------------
+    vehicle_summary["net_profit"] = (
+        vehicle_summary["fare"] - vehicle_summary["total_cost"]
+    )
+    
+    # ---------------------------------
+    # DISPLAY TABLE
+    # ---------------------------------
+    display_df = vehicle_summary[["vehicle_no", "net_profit"]].rename(
+        columns={
+            "vehicle_no": "Vehicle",
+            "net_profit": "Net Profit (Rs.)"
+        }
+    )
+    
+    st.dataframe(display_df)
+    
+    # ---------------------------------
+    # TOTAL PROFIT
+    # ---------------------------------
+    total_vehicle_profit = vehicle_summary["net_profit"].sum()
+    
+    st.success(f"💰 Total Net Profit (All Vehicles): Rs {total_vehicle_profit:,.0f}")
+
 
     # =====================================================
     # TAB 2 — VEHICLE PERFORMANCE

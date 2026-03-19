@@ -907,7 +907,7 @@ def get_vehicle_service_data():
 # -------------------------------------------------------------------
 def page_admin_dashboard():
 
-    st.markdown("<h2>📊 CEEKAY Executive Dashboard</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>CEEKAY Executive Dashboard</h2>", unsafe_allow_html=True)
 
     df = pd.DataFrame(daily_sheet.get_all_records())
     df = df[df["status"] == "Correct"]
@@ -1033,11 +1033,11 @@ def page_admin_dashboard():
 
         
     # ---------------------------------
-    # 💰 REVENUE BREAKDOWN PIE CHART
+    # REVENUE BREAKDOWN PIE CHART
     # ---------------------------------
     
     st.markdown("---")
-    st.subheader("💰 Revenue Breakdown")
+    st.subheader("Revenue Breakdown")
     
     # -----------------------------
     # VEHICLE EXPENSES (VARIABLE)
@@ -1115,7 +1115,7 @@ def page_admin_dashboard():
     st.plotly_chart(fig_pie, use_container_width=True)
 
     st.markdown("---")
-    st.subheader("🚗 Net Profit by Vehicle")
+    st.subheader("Net Profit by Vehicle")
     
     # ---------------------------------
     # PREPARE DATA

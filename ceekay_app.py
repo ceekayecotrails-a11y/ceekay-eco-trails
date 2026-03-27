@@ -1347,12 +1347,22 @@ def page_admin_dashboard():
                         # Extract installment numbers from description
                         lease_df["installment_no"] = (
                             lease_df["description"]
-                            .str.extract(r'(\d+)')
+                            .str.extract(r'Installment\s*(\d+)', expand=False)
                             .astype(float)
                         )
+                        
+                        paid_installments = lease_df["installment_no"].max()
+                        
+                        if pd.isna(paid_installments):
+                            paid_installments = 0
+                        
+                        paid_installments = int(paid_installments)
                 
                         # Get highest installment number paid
-                        paid_installments = lease_df["installment_no"].dropna().nunique()
+                        paid_installments = lease_df["installment_no"].max()
+
+                        if pd.isna(paid_installments):
+                            paid_installments = 0
                 
                 # ---------------------------------
                 # CALCULATE REMAINING

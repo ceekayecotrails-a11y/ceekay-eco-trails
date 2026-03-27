@@ -1352,7 +1352,7 @@ def page_admin_dashboard():
                         )
                 
                         # Get highest installment number paid
-                        paid_installments = int(lease_df["installment_no"].max())
+                        paid_installments = lease_df["installment_no"].dropna().nunique()
                 
                 # ---------------------------------
                 # CALCULATE REMAINING

@@ -1327,18 +1327,40 @@ def page_admin_dashboard():
                 else:
                     air_status = "🟢 OK"
 
-                lease_start = pd.to_datetime(
-                    row.get("lease_start_date", today)
-                ).date()
-
-                total_installments = num(row.get("lease_total_installments", 0))
+                # ---------------------------------
+                # LOAD LEASING EXPENSE DATA
+                # ---------------------------------
+                expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+                
+                paid_installments = 0
+                
+                if not expense_df.empty:
+                
+                    # Filter only leasing for this vehicle
+                    lease_df = expense_df[
+                        (expense_df["vehicle_no"] == row["vehicle_no"]) &
+                        (expense_df["category"].str.lower() == "leasing")
+                    ].copy()
+                
+                    if not lease_df.empty:
+                
+                        # Extract installment numbers from description
+                        lease_df["installment_no"] = (
+                            lease_df["description"]
+                            .str.extract(r'(\d+)')
+                            .astype(float)
+                        )
+                
+                        # Get highest installment number paid
+                        paid_installments = int(lease_df["installment_no"].max())
+                
+                # ---------------------------------
+                # CALCULATE REMAINING
+                # ---------------------------------
+                total_installments = int(num(row.get("lease_total_installments", 0)))
                 installment_amount = num(row.get("lease_installment_amount", 0))
-
-                months_passed = (today.year - lease_start.year) * 12 + (
-                    today.month - lease_start.month
-                )
-
-                remaining_months = max(0, total_installments - months_passed)
+                
+                remaining_months = max(0, total_installments - paid_installments)
                 remaining_balance = remaining_months * installment_amount
 
                 license_date = pd.to_datetime(row["license_renewal_date"]).date()

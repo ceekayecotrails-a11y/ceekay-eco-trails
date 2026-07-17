@@ -1403,46 +1403,72 @@ def page_admin_dashboard():
                 # ---------------------------------
                 # CALCULATE REMAINING
                 # ---------------------------------
-                total_installments = int(num(row.get("lease_total_installments", 0)))
-                installment_amount = num(row.get("lease_installment_amount", 0))
+                total_installments = int(
+                    num(row.get("lease_total_installments", 0))
+                )
                 
-                remaining_months = max(0, total_installments - paid_installments)
-                remaining_balance = remaining_months * installment_amount
-
-                license_date = pd.to_datetime(row["license_renewal_date"]).date()
-                insurance_date = pd.to_datetime(row["insurance_renewal_date"]).date()
-
+                installment_amount = num(
+                    row.get("lease_installment_amount", 0)
+                )
+                
+                # Ensure paid installments is a valid integer
+                paid_installments = int(num(paid_installments))
+                
+                # Prevent paid installments exceeding total installments
+                paid_installments = min(
+                    paid_installments,
+                    total_installments
+                )
+                
+                remaining_installments = max(
+                    0,
+                    total_installments - paid_installments
+                )
+                
+                remaining_balance = (
+                    remaining_installments * installment_amount
+                )
+                
+                license_date = pd.to_datetime(
+                    row["license_renewal_date"]
+                ).date()
+                
+                insurance_date = pd.to_datetime(
+                    row["insurance_renewal_date"]
+                ).date()
+                
                 license_days = (license_date - today).days
                 insurance_days = (insurance_date - today).days
-
+                
                 st.markdown(f"""
                 ### 🚗 {row['vehicle_no']}
-
+                
                 📍 Current Mileage: {int(current_mileage):,} km  
-
+                
                 🛞 Next Wheel Alignment: {int(row['next_alignment']):,} km  
                 Status: {alignment_status}  
-
+                
                 🌬 Next Air Filter: {int(row['next_air_filter']):,} km  
                 Status: {air_status}  
-
+                
                 ---
-
+                
                 🗓 License Renewal: {license_date}  
                 ⏳ Days Remaining: {license_days}
-
+                
                 🛡 Insurance Renewal: {insurance_date}  
                 ⏳ Days Remaining: {insurance_days}
-
+                
                 ---
-
-                💳 Lease Installment: Rs. {installment_amount:,.0f}  
-                📦 Remaining Months: {remaining_months}  
+                
+                💳 Monthly Lease Installment: Rs. {installment_amount:,.0f}  
+                ✅ Paid Installments: {paid_installments}  
+                📦 Total Installments: {total_installments}  
+                ⏳ Remaining Installments: {remaining_installments}  
                 💰 Remaining Balance: Rs. {remaining_balance:,.0f}
-
+                
                 ---
                 """)
-
 
 # -------------------------------------------------------------------
 # ADMIN DAILY PROFIT REPORT

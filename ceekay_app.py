@@ -941,285 +941,285 @@ def page_admin_dashboard():
         (df["date"] <= pd.to_datetime(end_date))
     ]
 
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "📊 Overview",
-        "🚗 Vehicle Performance",
-        "💰 Expense Insights",
-        "🚗 Vehicle Details"
-    ])
-
-    # =====================================================
-    # SERVICE ALERT SECTION
-    # =====================================================
-    
-    st.markdown("## Service Alerts")
+            tab1, tab2, tab3, tab4 = st.tabs([
+                "📊 Overview",
+                "🚗 Vehicle Performance",
+                "💰 Expense Insights",
+                "🚗 Vehicle Details"
+            ])
         
-    vehicle_data = get_vehicle_service_data()
+            # =====================================================
+            # SERVICE ALERT SECTION
+            # =====================================================
+            
+                st.markdown("## Service Alerts")
+                    
+                vehicle_data = get_vehicle_service_data()
+                    
+                if vehicle_data.empty:
+                    st.info("No vehicle data available.")
+                else:
+                    
+                    alerts = []
+                    
+                    for _, row in vehicle_data.iterrows():
+                    
+                        current = row["current_mileage"]
+                    
+                        if row["alignment_interval_km"] > 0:
+                    
+                            if current >= row["next_alignment"]:
+                                alerts.append(f"🔴 {row['vehicle_no']} - Wheel Alignment OVERDUE")
+                    
+                            elif current >= row["next_alignment"] - 500:
+                                alerts.append(f"🟡 {row['vehicle_no']} - Wheel Alignment Due Soon")
+                    
+                        if row["air_filter_interval_km"] > 0:
+                    
+                            if current >= row["next_air_filter"]:
+                                alerts.append(f"🔴 {row['vehicle_no']} - Air Filter OVERDUE")
+                    
+                            elif current >= row["next_air_filter"] - 1000:
+                                alerts.append(f"🟡 {row['vehicle_no']} - Air Filter Due Soon")
+                    
+                    if alerts:
+                        for alert in alerts:
+                            st.warning(alert)
+                    else:
+                        st.success("All vehicles are service-ready ✅")
+                
+            # =====================================================
+            # TAB 1 — BUSINESS OVERVIEW
+            # =====================================================
+            with tab1:
+             
         
-    if vehicle_data.empty:
-        st.info("No vehicle data available.")
-    else:
         
-        alerts = []
+                
+                st.markdown("---")
+            
+                total_revenue = df["fare"].sum()
         
-        for _, row in vehicle_data.iterrows():
+                total_revenue = df["fare"].sum()
+                total_salary = df["driver_salary"].sum()
+                total_platform = df["platform_fee"].sum()
         
-            current = row["current_mileage"]
+                # Load vehicle cost per km
+                df["vehicle_running_cost"] = pd.to_numeric(
+                    df.get("vehicle_running_cost", 0),
+                    errors="coerce"
+                ).fillna(0)
         
-            if row["alignment_interval_km"] > 0:
+                running_cost = df["vehicle_running_cost"].sum()
+                total_mileage = df["daily_mileage"].sum()
+                total_cost = total_salary + total_platform + running_cost
+                net_profit = total_revenue - total_cost
         
-                if current >= row["next_alignment"]:
-                    alerts.append(f"🔴 {row['vehicle_no']} - Wheel Alignment OVERDUE")
+                if total_mileage > 0:
+                    profit_per_km = net_profit / total_mileage
+                else:
+                    profit_per_km = 0
         
-                elif current >= row["next_alignment"] - 500:
-                    alerts.append(f"🟡 {row['vehicle_no']} - Wheel Alignment Due Soon")
+                col1, col2, col3, col4 = st.columns(4)
+                col1.metric("Total Revenue", f"Rs. {total_revenue:,.0f}")
+                col2.metric("Total Cost", f"Rs. {total_cost:,.0f}")
+                col3.metric("Net Profit", f"Rs. {net_profit:,.0f}")
+                col4.metric("Profit per KM", f"Rs. {profit_per_km:,.2f}")
         
-            if row["air_filter_interval_km"] > 0:
+                st.markdown("---")
         
-                if current >= row["next_air_filter"]:
-                    alerts.append(f"🔴 {row['vehicle_no']} - Air Filter OVERDUE")
+                daily_trend = df.groupby(df["date"].dt.date)["fare"].sum().reset_index()
+                fig = px.line(daily_trend, x="date", y="fare", title="Revenue Trend", markers=True)
+                st.plotly_chart(fig, use_container_width=True)
         
-                elif current >= row["next_air_filter"] - 1000:
-                    alerts.append(f"🟡 {row['vehicle_no']} - Air Filter Due Soon")
         
-        if alerts:
-            for alert in alerts:
-                st.warning(alert)
-        else:
-            st.success("All vehicles are service-ready ✅")
-    
-    # =====================================================
-    # TAB 1 — BUSINESS OVERVIEW
-    # =====================================================
-    with tab1:
-     
-
-
+                
+                # ---------------------------------
+                # REVENUE BREAKDOWN PIE CHART
+                # ---------------------------------
+                
+                st.markdown("---")
+                st.subheader("Revenue Breakdown")
+                
+                # -----------------------------
+                # VEHICLE EXPENSES (VARIABLE)
+                # -----------------------------
+                vehicle_expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+                
+                vehicle_expense_total = 0
+                
+                if not vehicle_expense_df.empty:
+                    vehicle_expense_df["amount"] = pd.to_numeric(
+                        vehicle_expense_df["amount"],
+                        errors="coerce"
+                    ).fillna(0)
+                
+                    vehicle_expense_total = vehicle_expense_df["amount"].sum()
+                
+                # -----------------------------
+                # RUNNING COST (ALREADY IN YOUR DATA)
+                # -----------------------------
+                df["vehicle_running_cost"] = pd.to_numeric(
+                    df.get("vehicle_running_cost", 0),
+                    errors="coerce"
+                ).fillna(0)
+                
+                running_cost = df["vehicle_running_cost"].sum()
+                
+                # -----------------------------
+                # MAIN VALUES
+                # -----------------------------
+                driver_salary = df["driver_salary"].sum()
+                platform_fee = df["platform_fee"].sum()
+                total_revenue = df["fare"].sum()
+                
+                total_cost = (
+                    driver_salary
+                    + platform_fee
+                    + running_cost
+                    + vehicle_expense_total
+                )
+                
+                net_profit = total_revenue - total_cost
+                
+                # -----------------------------
+                # FIX NEGATIVE / ZERO VALUES
+                # -----------------------------
+                display_profit = net_profit if net_profit > 0 else 0
+                
+                pie_data = pd.DataFrame({
+                    "Category": [
+                        "Driver Salary",
+                        "Platform Fee",
+                        "Running Cost",
+                        "Vehicle Expenses",
+                        "Profit"
+                    ],
+                    "Amount": [
+                        driver_salary,
+                        platform_fee,
+                        running_cost,
+                        vehicle_expense_total,
+                        display_profit
+                    ]
+                })
+                
+                # -----------------------------
+                # PIE CHART
+                # -----------------------------
+                fig_pie = px.pie(
+                    pie_data,
+                    names="Category",
+                    values="Amount",
+                    hole=0.4
+                )
+                
+                st.plotly_chart(fig_pie, use_container_width=True)
         
-        st.markdown("---")
-    
-        total_revenue = df["fare"].sum()
-
-        total_revenue = df["fare"].sum()
-        total_salary = df["driver_salary"].sum()
-        total_platform = df["platform_fee"].sum()
-
-        # Load vehicle cost per km
-        df["vehicle_running_cost"] = pd.to_numeric(
-            df.get("vehicle_running_cost", 0),
-            errors="coerce"
-        ).fillna(0)
-
-        running_cost = df["vehicle_running_cost"].sum()
-        total_mileage = df["daily_mileage"].sum()
-        total_cost = total_salary + total_platform + running_cost
-        net_profit = total_revenue - total_cost
-
-        if total_mileage > 0:
-            profit_per_km = net_profit / total_mileage
-        else:
-            profit_per_km = 0
-
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Total Revenue", f"Rs. {total_revenue:,.0f}")
-        col2.metric("Total Cost", f"Rs. {total_cost:,.0f}")
-        col3.metric("Net Profit", f"Rs. {net_profit:,.0f}")
-        col4.metric("Profit per KM", f"Rs. {profit_per_km:,.2f}")
-
-        st.markdown("---")
-
-        daily_trend = df.groupby(df["date"].dt.date)["fare"].sum().reset_index()
-        fig = px.line(daily_trend, x="date", y="fare", title="Revenue Trend", markers=True)
-        st.plotly_chart(fig, use_container_width=True)
-
-
-        
-    # ---------------------------------
-    # REVENUE BREAKDOWN PIE CHART
-    # ---------------------------------
-    
-    st.markdown("---")
-    st.subheader("Revenue Breakdown")
-    
-    # -----------------------------
-    # VEHICLE EXPENSES (VARIABLE)
-    # -----------------------------
-    vehicle_expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
-    
-    vehicle_expense_total = 0
-    
-    if not vehicle_expense_df.empty:
-        vehicle_expense_df["amount"] = pd.to_numeric(
-            vehicle_expense_df["amount"],
-            errors="coerce"
-        ).fillna(0)
-    
-        vehicle_expense_total = vehicle_expense_df["amount"].sum()
-    
-    # -----------------------------
-    # RUNNING COST (ALREADY IN YOUR DATA)
-    # -----------------------------
-    df["vehicle_running_cost"] = pd.to_numeric(
-        df.get("vehicle_running_cost", 0),
-        errors="coerce"
-    ).fillna(0)
-    
-    running_cost = df["vehicle_running_cost"].sum()
-    
-    # -----------------------------
-    # MAIN VALUES
-    # -----------------------------
-    driver_salary = df["driver_salary"].sum()
-    platform_fee = df["platform_fee"].sum()
-    total_revenue = df["fare"].sum()
-    
-    total_cost = (
-        driver_salary
-        + platform_fee
-        + running_cost
-        + vehicle_expense_total
-    )
-    
-    net_profit = total_revenue - total_cost
-    
-    # -----------------------------
-    # FIX NEGATIVE / ZERO VALUES
-    # -----------------------------
-    display_profit = net_profit if net_profit > 0 else 0
-    
-    pie_data = pd.DataFrame({
-        "Category": [
-            "Driver Salary",
-            "Platform Fee",
-            "Running Cost",
-            "Vehicle Expenses",
-            "Profit"
-        ],
-        "Amount": [
-            driver_salary,
-            platform_fee,
-            running_cost,
-            vehicle_expense_total,
-            display_profit
-        ]
-    })
-    
-    # -----------------------------
-    # PIE CHART
-    # -----------------------------
-    fig_pie = px.pie(
-        pie_data,
-        names="Category",
-        values="Amount",
-        hole=0.4
-    )
-    
-    st.plotly_chart(fig_pie, use_container_width=True)
-
-    st.markdown("---")
-    st.subheader("Net Profit by Vehicle")
-    
-    # ---------------------------------
-    # PREPARE DATA
-    # ---------------------------------
-    df_vehicle = df.copy()
-    
-    # Ensure numeric
-    cols = ["fare", "driver_salary", "platform_fee", "vehicle_running_cost", "tip", "toll_fee"]
-    for c in cols:
-        if c in df_vehicle.columns:
-            df_vehicle[c] = pd.to_numeric(df_vehicle[c], errors="coerce").fillna(0)
-    
-    # ---------------------------------
-    # LOAD VEHICLE EXPENSES
-    # ---------------------------------
-    vehicle_expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
-    
-    if not vehicle_expense_df.empty:
-        vehicle_expense_df["amount"] = pd.to_numeric(
-            vehicle_expense_df["amount"],
-            errors="coerce"
-        ).fillna(0)
-    
-    # ---------------------------------
-    # GROUP VEHICLE DATA
-    # ---------------------------------
-    vehicle_summary = df_vehicle.groupby("vehicle_no").agg({
-        "fare": "sum",
-        "driver_salary": "sum",
-        "platform_fee": "sum",
-        "vehicle_running_cost": "sum",
-        "tip": "sum",
-        "toll_fee": "sum"
-    }).reset_index()
-    
-    # ---------------------------------
-    # ADD VEHICLE EXPENSES (REPAIRS)
-    # ---------------------------------
-    if not vehicle_expense_df.empty:
-    
-        vehicle_expense_summary = (
-            vehicle_expense_df.groupby("vehicle_no")["amount"]
-            .sum()
-            .reset_index()
-            .rename(columns={"amount": "vehicle_expense"})
-        )
-    
-        vehicle_summary = vehicle_summary.merge(
-            vehicle_expense_summary,
-            on="vehicle_no",
-            how="left"
-        )
-    
-        vehicle_summary["vehicle_expense"] = vehicle_summary["vehicle_expense"].fillna(0)
-    
-    else:
-        vehicle_summary["vehicle_expense"] = 0
-    
-    # ---------------------------------
-    # CALCULATE REAL DRIVER COST
-    # ---------------------------------
-    vehicle_summary["real_driver_cost"] = (
-        vehicle_summary["driver_salary"]
-        + vehicle_summary["tip"]
-        + vehicle_summary["toll_fee"]
-    )
-    
-    # ---------------------------------
-    # TOTAL COST PER VEHICLE
-    # ---------------------------------
-    vehicle_summary["total_cost"] = (
-        vehicle_summary["real_driver_cost"]
-        + vehicle_summary["platform_fee"]
-        + vehicle_summary["vehicle_running_cost"]
-        + vehicle_summary["vehicle_expense"]
-    )
-    
-    # ---------------------------------
-    # NET PROFIT PER VEHICLE
-    # ---------------------------------
-    vehicle_summary["net_profit"] = (
-        vehicle_summary["fare"] - vehicle_summary["total_cost"]
-    )
-    
-    # ---------------------------------
-    # DISPLAY TABLE
-    # ---------------------------------
-    display_df = vehicle_summary[["vehicle_no", "net_profit"]].rename(
-        columns={
-            "vehicle_no": "Vehicle",
-            "net_profit": "Net Profit (Rs.)"
-        }
-    )
-    
-    st.dataframe(display_df)
-    
-    # ---------------------------------
-    # TOTAL PROFIT
-    # ---------------------------------
-    total_vehicle_profit = vehicle_summary["net_profit"].sum()
-    
-    st.success(f"💰 Total Net Profit (All Vehicles): Rs {total_vehicle_profit:,.0f}")
+                st.markdown("---")
+                st.subheader("Net Profit by Vehicle")
+                
+                # ---------------------------------
+                # PREPARE DATA
+                # ---------------------------------
+                df_vehicle = df.copy()
+                
+                # Ensure numeric
+                cols = ["fare", "driver_salary", "platform_fee", "vehicle_running_cost", "tip", "toll_fee"]
+                for c in cols:
+                    if c in df_vehicle.columns:
+                        df_vehicle[c] = pd.to_numeric(df_vehicle[c], errors="coerce").fillna(0)
+                
+                # ---------------------------------
+                # LOAD VEHICLE EXPENSES
+                # ---------------------------------
+                vehicle_expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+                
+                if not vehicle_expense_df.empty:
+                    vehicle_expense_df["amount"] = pd.to_numeric(
+                        vehicle_expense_df["amount"],
+                        errors="coerce"
+                    ).fillna(0)
+                
+                # ---------------------------------
+                # GROUP VEHICLE DATA
+                # ---------------------------------
+                vehicle_summary = df_vehicle.groupby("vehicle_no").agg({
+                    "fare": "sum",
+                    "driver_salary": "sum",
+                    "platform_fee": "sum",
+                    "vehicle_running_cost": "sum",
+                    "tip": "sum",
+                    "toll_fee": "sum"
+                }).reset_index()
+                
+                # ---------------------------------
+                # ADD VEHICLE EXPENSES (REPAIRS)
+                # ---------------------------------
+                if not vehicle_expense_df.empty:
+                
+                    vehicle_expense_summary = (
+                        vehicle_expense_df.groupby("vehicle_no")["amount"]
+                        .sum()
+                        .reset_index()
+                        .rename(columns={"amount": "vehicle_expense"})
+                    )
+                
+                    vehicle_summary = vehicle_summary.merge(
+                        vehicle_expense_summary,
+                        on="vehicle_no",
+                        how="left"
+                    )
+                
+                    vehicle_summary["vehicle_expense"] = vehicle_summary["vehicle_expense"].fillna(0)
+                
+                else:
+                    vehicle_summary["vehicle_expense"] = 0
+                
+                # ---------------------------------
+                # CALCULATE REAL DRIVER COST
+                # ---------------------------------
+                vehicle_summary["real_driver_cost"] = (
+                    vehicle_summary["driver_salary"]
+                    + vehicle_summary["tip"]
+                    + vehicle_summary["toll_fee"]
+                )
+                
+                # ---------------------------------
+                # TOTAL COST PER VEHICLE
+                # ---------------------------------
+                vehicle_summary["total_cost"] = (
+                    vehicle_summary["real_driver_cost"]
+                    + vehicle_summary["platform_fee"]
+                    + vehicle_summary["vehicle_running_cost"]
+                    + vehicle_summary["vehicle_expense"]
+                )
+                
+                # ---------------------------------
+                # NET PROFIT PER VEHICLE
+                # ---------------------------------
+                vehicle_summary["net_profit"] = (
+                    vehicle_summary["fare"] - vehicle_summary["total_cost"]
+                )
+                
+                # ---------------------------------
+                # DISPLAY TABLE
+                # ---------------------------------
+                display_df = vehicle_summary[["vehicle_no", "net_profit"]].rename(
+                    columns={
+                        "vehicle_no": "Vehicle",
+                        "net_profit": "Net Profit (Rs.)"
+                    }
+                )
+                
+                st.dataframe(display_df)
+                
+                # ---------------------------------
+                # TOTAL PROFIT
+                # ---------------------------------
+                total_vehicle_profit = vehicle_summary["net_profit"].sum()
+                
+                st.success(f"💰 Total Net Profit (All Vehicles): Rs {total_vehicle_profit:,.0f}")
 
 
     # =====================================================

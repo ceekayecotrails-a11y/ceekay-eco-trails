@@ -6,6 +6,8 @@ from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime, date
 import io
 import matplotlib.pyplot as plt
+import base64
+from pathlib import Path
 
 # -------------------------------------------------------------------
 # DARK MODE + PAGE CONFIG
@@ -179,6 +181,37 @@ h1, h2, h3 {color: var(--ck-primary); letter-spacing: -.02em;}
     font-weight: 800;
     color: var(--ck-primary);
     margin-bottom: .25rem;
+}
+
+
+.ck-login-brand {
+    text-align: center;
+    padding: 8px 8px 18px;
+}
+.ck-login-logo {
+    display: block;
+    width: 170px;
+    max-width: 58%;
+    height: auto;
+    margin: 0 auto 14px;
+}
+.ck-login-title {
+    color: var(--ck-primary);
+    font-size: 1.65rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin: 0;
+}
+.ck-login-subtitle {
+    color: var(--ck-muted);
+    font-size: .95rem;
+    margin: 8px 0 0;
+}
+.ck-login-footer {
+    text-align: center;
+    color: var(--ck-muted);
+    font-size: .78rem;
+    margin-top: 18px;
 }
 
 @media (max-width: 768px) {
@@ -2105,82 +2138,101 @@ if "page" not in st.session_state:
 # =====================================================
 if st.session_state.page is None:
 
-    st.markdown(
-        """
-        <div class="ck-page-header" style="max-width:760px; margin:20px auto 24px; text-align:center;">
-            <h2>CEEKAY Tours Management System</h2>
-            <p>Secure access for drivers and administrators.</p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
     login_left, login_center, login_right = st.columns([1, 1.15, 1])
 
     with login_center:
-        try:
-            col1, col2, col3 = st.columns([1, 2, 1])
+        with st.container(border=True):
+            logo_html = ""
+            logo_path = Path("logo.png")
 
-with col2:
-        st.image("logo.png", width=140)
-        except Exception:
-            pass
-        
-        menu = st.selectbox(
-            "Login Type",
-            ["Driver", "Admin"],
-            key="login_type"
-        )
-        
-        # DRIVER LOGIN
-        if menu == "Driver":
-        
-            username = st.text_input(
-                "Driver Username",
-                key="driver_login_username"
-            )
-        
-            password = st.text_input(
-                "Password",
-                type="password",
-                key="driver_login_password"
-            )
-            if st.button(
-                "Login as Driver",
-                use_container_width=True,
-                key="driver_login_button"
-            ):
-                d = driver_auth(username, password)
+            if logo_path.exists():
+                logo_base64 = base64.b64encode(
+                    logo_path.read_bytes()
+                ).decode("utf-8")
+                logo_html = (
+                    f'<img class="ck-login-logo" '
+                    f'src="data:image/png;base64,{logo_base64}" '
+                    f'alt="CEEKAY Tours logo">'
+                )
 
-                if d:
-                    status = check_driver_status(d["driver_name"])
-                    st.session_state.driver_status = status
-                    st.session_state.page = "driver"
-                    st.session_state.driver = d
-                    st.rerun()
-                else:
-                    st.error("Invalid Username or Password!")
-
-        # ADMIN LOGIN
-        else:
-
-            pw = st.text_input(
-                "Admin Password",
-                type="password",
-                key="admin_login_password"
+            st.markdown(
+                f"""
+                <div class="ck-login-brand">
+                    {logo_html}
+                    <div class="ck-login-title">CEEKAY Tours</div>
+                    <div class="ck-login-subtitle">
+                        Management System<br>
+                        Secure access for drivers and administrators
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
             )
 
-            if st.button(
-                "Login as Admin",
-                use_container_width=True,
-                key="admin_login_button"
-            ):
-                if pw == ADMIN_PASSWORD:
-                    st.session_state.page = "admin"
-                    st.session_state.is_admin_logged = True
-                    st.rerun()
-                else:
-                    st.error("Incorrect Password!")
+            menu = st.selectbox(
+                "Login Type",
+                ["Driver", "Admin"],
+                key="login_type"
+            )
+
+            # DRIVER LOGIN
+            if menu == "Driver":
+
+                username = st.text_input(
+                    "Driver Username",
+                    key="driver_login_username",
+                    placeholder="Enter your username"
+                )
+
+                password = st.text_input(
+                    "Password",
+                    type="password",
+                    key="driver_login_password",
+                    placeholder="Enter your password"
+                )
+
+                if st.button(
+                    "Login as Driver",
+                    use_container_width=True,
+                    key="driver_login_button"
+                ):
+                    d = driver_auth(username, password)
+
+                    if d:
+                        status = check_driver_status(d["driver_name"])
+                        st.session_state.driver_status = status
+                        st.session_state.page = "driver"
+                        st.session_state.driver = d
+                        st.rerun()
+                    else:
+                        st.error("Invalid Username or Password!")
+
+            # ADMIN LOGIN
+            else:
+
+                pw = st.text_input(
+                    "Admin Password",
+                    type="password",
+                    key="admin_login_password",
+                    placeholder="Enter the admin password"
+                )
+
+                if st.button(
+                    "Login as Admin",
+                    use_container_width=True,
+                    key="admin_login_button"
+                ):
+                    if pw == ADMIN_PASSWORD:
+                        st.session_state.page = "admin"
+                        st.session_state.is_admin_logged = True
+                        st.rerun()
+                    else:
+                        st.error("Incorrect Password!")
+
+            st.markdown(
+                '<div class="ck-login-footer">© 2026 CEEKAY Tours</div>',
+                unsafe_allow_html=True
+            )
 
 
 # =====================================================

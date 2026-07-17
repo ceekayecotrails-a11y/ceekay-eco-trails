@@ -10,7 +10,7 @@ import base64
 from pathlib import Path
 
 # -------------------------------------------------------------------
-# DARK MODE + PAGE CONFIG
+# SOFT CHARCOAL UI + PAGE CONFIG
 # -------------------------------------------------------------------
 st.set_page_config(
     page_title="CEEKAY Tours Management System",
@@ -34,21 +34,21 @@ st.markdown(
 
 
 # -------------------------------------------------------------------
-# MODERN CEEKAY UI THEME
+# MODERN CEEKAY SOFT CHARCOAL UI THEME
 # -------------------------------------------------------------------
 modern_css = """
 <style>
 :root {
-    --ck-primary: #0b0b0c;
-    --ck-primary-2: #202124;
-    --ck-accent: #c9a75d;
-    --ck-accent-soft: #f4ead2;
-    --ck-bg: #f2f2f3;
+    --ck-primary: #34373c;
+    --ck-primary-2: #4a4d52;
+    --ck-accent: #c39a3b;
+    --ck-accent-soft: #f5ecd8;
+    --ck-bg: #f4f5f7;
     --ck-card: #ffffff;
-    --ck-text: #171719;
-    --ck-muted: #747477;
-    --ck-border: #dedee1;
-    --ck-dark-border: #343438;
+    --ck-text: #25272b;
+    --ck-muted: #70737a;
+    --ck-border: #dfe1e5;
+    --ck-dark-border: #555960;
     --ck-success: #18864b;
     --ck-warning: #b7791f;
     --ck-danger: #c0392b;
@@ -71,8 +71,8 @@ header[data-testid="stHeader"] {background: transparent;}
 }
 
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #080809 0%, #121214 58%, #1c1c1f 100%);
-    border-right: 1px solid #2a2a2d;
+    background: linear-gradient(180deg, #2b2d31 0%, #34373c 58%, #3f4248 100%);
+    border-right: 1px solid #4a4d52;
     box-shadow: 8px 0 30px rgba(0,0,0,.10);
 }
 
@@ -109,9 +109,9 @@ h1, h2, h3 {
 }
 
 .ck-page-header {
-    background: linear-gradient(135deg, #09090a 0%, #1e1e21 75%, #2c271d 100%);
+    background: linear-gradient(135deg, #34373c 0%, #45484e 72%, #565047 100%);
     color: white;
-    border: 1px solid #333338;
+    border: 1px solid #5a5d63;
     border-radius: 18px;
     padding: 23px 27px;
     margin-bottom: 18px;
@@ -141,7 +141,7 @@ h1, h2, h3 {
     box-shadow: 0 7px 20px rgba(0,0,0,.06);
 }
 [data-testid="stMetricLabel"] {color: var(--ck-muted); font-weight: 650;}
-[data-testid="stMetricValue"] {color: #101012; font-weight: 780;}
+[data-testid="stMetricValue"] {color: #25272b; font-weight: 780;}
 
 [data-testid="stTabs"] [data-baseweb="tab-list"] {
     gap: 8px;
@@ -158,10 +158,10 @@ h1, h2, h3 {
     color: #56565a;
 }
 [data-testid="stTabs"] button[data-baseweb="tab"]:hover {
-    color: #111113;
+    color: #34373c;
 }
 [data-testid="stTabs"] button[aria-selected="true"] {
-    background: #111113;
+    background: #45484e;
     color: white;
     box-shadow: 0 3px 10px rgba(0,0,0,.18);
 }
@@ -182,9 +182,9 @@ h1, h2, h3 {
 }
 
 .stButton > button {
-    background: linear-gradient(180deg, #202023, #0c0c0d);
+    background: linear-gradient(180deg, #4a4d52, #34373c);
     color: white;
-    border: 1px solid #080809;
+    border: 1px solid #2b2d31;
     border-radius: 10px;
     min-height: 42px;
     font-weight: 680;
@@ -192,7 +192,7 @@ h1, h2, h3 {
     transition: all .18s ease;
 }
 .stButton > button:hover {
-    background: linear-gradient(180deg, #353539, #171719);
+    background: linear-gradient(180deg, #5a5e64, #45484e);
     color: #f1d89e;
     border-color: var(--ck-accent);
     transform: translateY(-1px);
@@ -221,7 +221,7 @@ h1, h2, h3 {
 .ck-section-title {
     font-size: 1.08rem;
     font-weight: 780;
-    color: #111113;
+    color: #34373c;
     margin: .2rem 0 .65rem;
     padding-left: 10px;
     border-left: 3px solid var(--ck-accent);
@@ -230,7 +230,7 @@ h1, h2, h3 {
 .ck-vehicle-title {
     font-size: 1.20rem;
     font-weight: 820;
-    color: #101012;
+    color: #34373c;
     margin-bottom: .25rem;
 }
 
@@ -247,7 +247,7 @@ h1, h2, h3 {
     filter: drop-shadow(0 8px 18px rgba(0,0,0,.13));
 }
 .ck-login-title {
-    color: #0c0c0d;
+    color: #34373c;
     font-size: 1.70rem;
     font-weight: 850;
     line-height: 1.2;
@@ -278,12 +278,12 @@ h1, h2, h3 {
 body:has(.ck-login-brand) .stApp {
     background:
         radial-gradient(circle at 18% 15%, rgba(201,167,93,.14), transparent 25%),
-        radial-gradient(circle at 85% 80%, rgba(0,0,0,.08), transparent 30%),
-        #eeeeef;
+        radial-gradient(circle at 85% 80%, rgba(52,55,60,.08), transparent 30%),
+        #f1f2f4;
 }
 body:has(.ck-login-brand) [data-testid="stVerticalBlockBorderWrapper"] {
     border: 1px solid #d7d7da !important;
-    border-top: 4px solid #111113 !important;
+    border-top: 4px solid #45484e !important;
     box-shadow: 0 18px 48px rgba(0,0,0,.14);
 }
 

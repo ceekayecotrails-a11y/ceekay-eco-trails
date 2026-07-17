@@ -389,6 +389,49 @@ text_contrast_css = """
 [data-testid="stDownloadButton"] button * {
     color: #ffffff !important;
 }
+
+/* Dropdown selected values and menus can render in a portal outside the app container. */
+[data-baseweb="select"] > div,
+[data-baseweb="select"] input,
+[data-baseweb="select"] span,
+[data-baseweb="select"] div,
+[data-baseweb="select"] svg {
+    color: #25272b !important;
+    fill: #25272b !important;
+}
+
+/* Open dropdown menu and every option */
+body [data-baseweb="popover"],
+body [data-baseweb="menu"],
+body [role="listbox"] {
+    background: #ffffff !important;
+    color: #25272b !important;
+}
+body [role="option"],
+body [role="option"] *,
+body [data-baseweb="menu"] li,
+body [data-baseweb="menu"] li * {
+    color: #25272b !important;
+    background-color: #ffffff !important;
+}
+body [role="option"]:hover,
+body [role="option"][aria-selected="true"],
+body [role="option"]:hover *,
+body [role="option"][aria-selected="true"] * {
+    color: #161719 !important;
+    background-color: #ececef !important;
+}
+
+/* Multiselect selected chips */
+[data-baseweb="tag"] {
+    background: #e6e7e9 !important;
+}
+[data-baseweb="tag"],
+[data-baseweb="tag"] *,
+[data-baseweb="tag"] svg {
+    color: #25272b !important;
+    fill: #25272b !important;
+}
 </style>
 """
 st.markdown(text_contrast_css, unsafe_allow_html=True)

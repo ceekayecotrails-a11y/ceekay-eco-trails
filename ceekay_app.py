@@ -1284,8 +1284,51 @@ def page_admin_dashboard():
 
         st.markdown("---")
 
-        daily_trend = df.groupby(df["date"].dt.date)["fare"].sum().reset_index()
-        fig = px.line(daily_trend, x="date", y="fare", title="Revenue Trend", markers=True)
+        # Revenue Trend vehicle selector (chart display only)
+        vehicle_options = ["All Vehicles"]
+        if "vehicle_no" in df.columns:
+            available_vehicles = sorted(
+                {
+                    str(vehicle).strip()
+                    for vehicle in df["vehicle_no"].dropna().tolist()
+                    if str(vehicle).strip()
+                }
+            )
+            vehicle_options.extend(available_vehicles)
+
+        selected_revenue_vehicle = st.selectbox(
+            "Revenue Trend Vehicle",
+            vehicle_options,
+            index=0,
+            key="revenue_trend_vehicle_filter"
+        )
+
+        if selected_revenue_vehicle == "All Vehicles":
+            trend_df = df
+            trend_title = "Revenue Trend - All Vehicles"
+        else:
+            trend_df = df[
+                df["vehicle_no"].astype(str).str.strip() == selected_revenue_vehicle
+            ]
+            trend_title = f"Revenue Trend - {selected_revenue_vehicle}"
+
+        daily_trend = (
+            trend_df.groupby(trend_df["date"].dt.date)["fare"]
+            .sum()
+            .reset_index()
+        )
+
+        fig = px.line(
+            daily_trend,
+            x="date",
+            y="fare",
+            title=trend_title,
+            markers=True
+        )
+        fig.update_layout(
+            xaxis_title="Date",
+            yaxis_title="Revenue (Rs.)"
+        )
         st.plotly_chart(fig, use_container_width=True)
         # ---------------------------------
         # REVENUE BREAKDOWN PIE CHART

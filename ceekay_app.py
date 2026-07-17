@@ -32,59 +32,163 @@ st.markdown(
 
 
 # -------------------------------------------------------------------
-# CUSTOM CSS (Dark Theme + Icon Sidebar)
+# MODERN CEEKAY UI THEME
 # -------------------------------------------------------------------
-dark_css = """
+modern_css = """
 <style>
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
+:root {
+    --ck-primary: #123b2a;
+    --ck-primary-2: #1f6b4a;
+    --ck-accent: #d6a84b;
+    --ck-bg: #f4f7f5;
+    --ck-card: #ffffff;
+    --ck-text: #17221c;
+    --ck-muted: #6b756f;
+    --ck-border: #dfe7e2;
+    --ck-success: #18864b;
+    --ck-warning: #b7791f;
+    --ck-danger: #c0392b;
+}
+
+#MainMenu, footer {visibility: hidden;}
+header[data-testid="stHeader"] {background: transparent;}
+
+.stApp {
+    background: var(--ck-bg);
+    color: var(--ck-text);
+}
+
+.block-container {
+    max-width: 1480px;
+    padding-top: 1.3rem;
+    padding-bottom: 3rem;
+}
 
 [data-testid="stSidebar"] {
-    background-color: ##0f2f1f;
+    background: linear-gradient(180deg, #0d2f21 0%, #123b2a 60%, #184a35 100%);
+    border-right: 0;
 }
 
-.sidebar-icons {
-    font-size: 25px;
-    color: #57ff57;
-    padding: 15px;
-    cursor: pointer;
-}
-.sidebar-icons:hover {
-    color: #aaffaa;
+[data-testid="stSidebar"] * {color: #f5fbf7;}
+[data-testid="stSidebar"] hr {border-color: rgba(255,255,255,.14);}
+
+[data-testid="stSidebar"] [role="radiogroup"] label {
+    background: transparent;
+    border-radius: 10px;
+    padding: .42rem .55rem;
+    margin: .12rem 0;
+    transition: all .18s ease;
 }
 
-.title-text {
-    font-size: 32px;
-    color: #00ff88;
-    font-weight: bold;
+[data-testid="stSidebar"] [role="radiogroup"] label:hover {
+    background: rgba(255,255,255,.10);
+    transform: translateX(2px);
 }
 
-.subheader-text {
-    font-size: 22px;
-    color: #66ffcc;
+[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {
+    background: rgba(255,255,255,.16);
+    box-shadow: inset 3px 0 0 var(--ck-accent);
 }
 
-.card {
-    padding: 20px;
+h1, h2, h3 {color: var(--ck-primary); letter-spacing: -.02em;}
+
+.ck-page-header {
+    background: linear-gradient(135deg, #123b2a, #1f6b4a);
+    color: white;
+    border-radius: 18px;
+    padding: 22px 26px;
+    margin-bottom: 18px;
+    box-shadow: 0 10px 28px rgba(18,59,42,.16);
+}
+.ck-page-header h2 {color: white; margin: 0; font-size: 1.65rem;}
+.ck-page-header p {margin: 5px 0 0; color: rgba(255,255,255,.78);}
+
+[data-testid="stMetric"] {
+    background: var(--ck-card);
+    border: 1px solid var(--ck-border);
+    border-radius: 15px;
+    padding: 16px 18px;
+    box-shadow: 0 5px 16px rgba(18,59,42,.06);
+}
+[data-testid="stMetricLabel"] {color: var(--ck-muted); font-weight: 600;}
+[data-testid="stMetricValue"] {color: var(--ck-primary); font-weight: 750;}
+
+[data-testid="stTabs"] [data-baseweb="tab-list"] {
+    gap: 8px;
+    background: #e9efeb;
+    padding: 5px;
     border-radius: 12px;
-    background-color: #1b1b1b;
-    color: white;
-    margin-bottom: 15px;
-    border: 1px solid #333;
+}
+[data-testid="stTabs"] button[data-baseweb="tab"] {
+    border-radius: 9px;
+    height: 42px;
+    padding-left: 18px;
+    padding-right: 18px;
+}
+[data-testid="stTabs"] button[aria-selected="true"] {
+    background: white;
+    color: var(--ck-primary);
+    box-shadow: 0 2px 9px rgba(18,59,42,.10);
 }
 
-.stButton>button {
-    background-color: #00c26f;
-    color: white;
-    border-radius: 8px;
-    border: none;
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background: var(--ck-card);
+    border-color: var(--ck-border) !important;
+    border-radius: 15px;
+    box-shadow: 0 5px 16px rgba(18,59,42,.05);
 }
-.stButton>button:hover {
-    background-color: #00e68a;
+
+[data-testid="stDataFrame"] {
+    background: white;
+    border: 1px solid var(--ck-border);
+    border-radius: 13px;
+    overflow: hidden;
+}
+
+.stButton > button {
+    background: var(--ck-primary-2);
+    color: white;
+    border: 0;
+    border-radius: 10px;
+    min-height: 42px;
+    font-weight: 650;
+    box-shadow: 0 4px 12px rgba(31,107,74,.18);
+}
+.stButton > button:hover {background: var(--ck-primary); color: white;}
+
+[data-testid="stDateInput"] input,
+[data-testid="stTextInput"] input,
+[data-testid="stNumberInput"] input,
+[data-baseweb="select"] > div {
+    background: white;
+    border-color: var(--ck-border);
+    border-radius: 10px;
+}
+
+[data-testid="stAlert"] {border-radius: 12px;}
+
+.ck-section-title {
+    font-size: 1.08rem;
+    font-weight: 750;
+    color: var(--ck-primary);
+    margin: .2rem 0 .65rem;
+}
+
+.ck-vehicle-title {
+    font-size: 1.20rem;
+    font-weight: 800;
+    color: var(--ck-primary);
+    margin-bottom: .25rem;
+}
+
+@media (max-width: 768px) {
+    .block-container {padding-left: .8rem; padding-right: .8rem;}
+    .ck-page-header {padding: 18px; border-radius: 14px;}
+    [data-testid="stTabs"] button[data-baseweb="tab"] {padding-left: 9px; padding-right: 9px; font-size: .82rem;}
 }
 </style>
 """
-st.markdown(dark_css, unsafe_allow_html=True)
+st.markdown(modern_css, unsafe_allow_html=True)
 
 # -------------------------------------------------------------------
 # GOOGLE SHEET CONNECTION (SAFE VERSION)
@@ -907,7 +1011,15 @@ def get_vehicle_service_data():
 # -------------------------------------------------------------------
 def page_admin_dashboard():
 
-    st.markdown("<h2>CEEKAY Executive Dashboard</h2>", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="ck-page-header">
+            <h2>CEEKAY Executive Dashboard</h2>
+            <p>Revenue, fleet performance, expenses and service status in one place.</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     df = pd.DataFrame(daily_sheet.get_all_records())
     df = df[df["status"] == "Correct"]
@@ -1459,9 +1571,7 @@ def page_admin_dashboard():
                 
                 ---
                 """)
-# -------------------------------------------------------------------
-# ADMIN DAILY PROFIT REPORT
-# -------------------------------------------------------------------
+
 def page_admin_daily_profit():
 
     st.markdown("<h2>💰 Daily Profit Report</h2>", unsafe_allow_html=True)
@@ -2100,5 +2210,4 @@ if st.session_state.get("page") == "admin":
         st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
-
 

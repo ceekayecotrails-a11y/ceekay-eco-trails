@@ -141,7 +141,7 @@ h1, h2, h3 {
     box-shadow: 0 7px 20px rgba(0,0,0,.06);
 }
 [data-testid="stMetricLabel"] {color: var(--ck-muted); font-weight: 650;}
-[data-testid="stMetricValue"] {color: #25272b; font-weight: 780;}
+[data-testid="stMetricValue"] {color: #25272b; font-weight: 450;}
 
 [data-testid="stTabs"] [data-baseweb="tab-list"] {
     gap: 8px;
@@ -1178,6 +1178,41 @@ def page_admin_dashboard():
     # TAB 1 — BUSINESS OVERVIEW
     # =====================================================
     with tab1:
+        # Overview privacy control (UI only; calculations remain unchanged)
+        if "show_overview_figures" not in st.session_state:
+            st.session_state.show_overview_figures = False
+
+        privacy_col, status_col = st.columns([1, 4])
+        with privacy_col:
+            toggle_label = (
+                "🙈 Hide Figures"
+                if st.session_state.show_overview_figures
+                else "👁 View Figures"
+            )
+            if st.button(
+                toggle_label,
+                key="overview_figure_toggle",
+                use_container_width=True
+            ):
+                st.session_state.show_overview_figures = (
+                    not st.session_state.show_overview_figures
+                )
+                st.rerun()
+
+        with status_col:
+            st.caption(
+                "Overview figures are visible."
+                if st.session_state.show_overview_figures
+                else "Overview figures are hidden for privacy."
+            )
+
+        def overview_value(formatted_value):
+            return (
+                formatted_value
+                if st.session_state.show_overview_figures
+                else "********"
+            )
+
         # =====================================================
         # SERVICE ALERT SECTION
         # =====================================================
@@ -1242,10 +1277,10 @@ def page_admin_dashboard():
             profit_per_km = 0
 
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Total Revenue", f"Rs. {total_revenue:,.0f}")
-        col2.metric("Total Cost", f"Rs. {total_cost:,.0f}")
-        col3.metric("Net Profit", f"Rs. {net_profit:,.0f}")
-        col4.metric("Profit per KM", f"Rs. {profit_per_km:,.2f}")
+        col1.metric("Total Revenue", overview_value(f"Rs. {total_revenue:,.0f}"))
+        col2.metric("Total Cost", overview_value(f"Rs. {total_cost:,.0f}"))
+        col3.metric("Net Profit", overview_value(f"Rs. {net_profit:,.0f}"))
+        col4.metric("Profit per KM", overview_value(f"Rs. {profit_per_km:,.2f}"))
 
         st.markdown("---")
 

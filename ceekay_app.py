@@ -2450,7 +2450,7 @@ if st.session_state.page is None:
                 f"""
                 <div class="ck-login-brand">
                     {logo_html}
-                    
+                    <div class="ck-login-title"></div>
                     <div class="ck-login-subtitle">
                         Management System<br>
                         Secure access for drivers and administrators

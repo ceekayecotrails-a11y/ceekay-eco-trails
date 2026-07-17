@@ -1330,39 +1330,75 @@ def page_admin_dashboard():
                 # ---------------------------------
                 # LOAD LEASING EXPENSE DATA
                 # ---------------------------------
-                expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+                expense_df = pd.DataFrame(
+                    vehicle_variable_sheet.get_all_records()
+                )
                 
                 paid_installments = 0
                 
                 if not expense_df.empty:
                 
-                    # Filter only leasing for this vehicle
+                    # Clean required columns
+                    expense_df["vehicle_no_clean"] = (
+                        expense_df["vehicle_no"]
+                        .astype(str)
+                        .str.replace("-", "", regex=False)
+                        .str.replace(" ", "", regex=False)
+                        .str.upper()
+                        .str.strip()
+                    )
+                
+                    expense_df["category_clean"] = (
+                        expense_df["category"]
+                        .astype(str)
+                        .str.lower()
+                        .str.strip()
+                    )
+                
+                    expense_df["description"] = (
+                        expense_df["description"]
+                        .astype(str)
+                        .str.strip()
+                    )
+                
+                    current_vehicle_clean = (
+                        str(row["vehicle_no"])
+                        .replace("-", "")
+                        .replace(" ", "")
+                        .upper()
+                        .strip()
+                    )
+                
+                    # Filter leasing payments for the selected vehicle
                     lease_df = expense_df[
-                        (expense_df["vehicle_no"] == row["vehicle_no"]) &
-                        (expense_df["category"].str.lower() == "leasing")
+                        (expense_df["vehicle_no_clean"] == current_vehicle_clean)
+                        & (expense_df["category_clean"] == "leasing")
                     ].copy()
                 
                     if not lease_df.empty:
                 
-                        # Extract installment numbers from description
+                        # Extract the instalment number from:
+                        # Installment 1
+                        # installment 2
+                        # Instalment 10
+                        # installemnt 5
                         lease_df["installment_no"] = (
                             lease_df["description"]
-                            .str.extract(r'Installment\s*(\d+)', expand=False)
-                            .astype(float)
+                            .str.extract(
+                                r"(?i)(?:installment|instalment|installemnt)\s*[-:#]?\s*(\d+)",
+                                expand=False
+                            )
                         )
-                        
-                        paid_installments = lease_df["installment_no"].max()
-                        
-                        if pd.isna(paid_installments):
-                            paid_installments = 0
-                        
-                        paid_installments = int(paid_installments)
                 
-                        # Get highest installment number paid
-                        paid_installments = lease_df["installment_no"].max()
-
-                        if pd.isna(paid_installments):
-                            paid_installments = 0
+                        lease_df["installment_no"] = pd.to_numeric(
+                            lease_df["installment_no"],
+                            errors="coerce"
+                        )
+                
+                        valid_installments = lease_df["installment_no"].dropna()
+                
+                        if not valid_installments.empty:
+                            paid_installments = int(valid_installments.max())
                 
                 # ---------------------------------
                 # CALCULATE REMAINING

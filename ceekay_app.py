@@ -13,7 +13,7 @@ from pathlib import Path
 # SOFT CHARCOAL UI + PAGE CONFIG
 # -------------------------------------------------------------------
 st.set_page_config(
-    
+    page_title="CEEKAY Tours Management System",
     page_icon="",
     layout="wide"
 )

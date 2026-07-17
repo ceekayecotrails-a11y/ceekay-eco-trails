@@ -2122,30 +2122,29 @@ if st.session_state.page is None:
             col1, col2, col3 = st.columns([1, 2, 1])
 
 with col2:
-    st.image("logo.png", width=140)
+        st.image("logo.png", width=140)
         except Exception:
             pass
-
+        
         menu = st.selectbox(
             "Login Type",
             ["Driver", "Admin"],
             key="login_type"
         )
-
+        
         # DRIVER LOGIN
         if menu == "Driver":
-
+        
             username = st.text_input(
                 "Driver Username",
                 key="driver_login_username"
             )
-
+        
             password = st.text_input(
                 "Password",
                 type="password",
                 key="driver_login_password"
             )
-
             if st.button(
                 "Login as Driver",
                 use_container_width=True,

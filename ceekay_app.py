@@ -305,6 +305,95 @@ a {color: #8a6823;}
 st.markdown(modern_css, unsafe_allow_html=True)
 
 # -------------------------------------------------------------------
+# ACCESSIBLE TEXT CONTRAST OVERRIDES (UI ONLY)
+# -------------------------------------------------------------------
+text_contrast_css = """
+<style>
+/* Main light workspace: use dark text */
+[data-testid="stAppViewContainer"] .main,
+[data-testid="stAppViewContainer"] .main p,
+[data-testid="stAppViewContainer"] .main span,
+[data-testid="stAppViewContainer"] .main label,
+[data-testid="stAppViewContainer"] .main li,
+[data-testid="stAppViewContainer"] .main div[data-testid="stMarkdownContainer"] {
+    color: var(--ck-text);
+}
+
+/* White and light surfaces */
+[data-testid="stAppViewContainer"] [data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stAppViewContainer"] [data-testid="stMetric"],
+[data-testid="stAppViewContainer"] [data-testid="stDataFrame"],
+[data-testid="stAppViewContainer"] [data-baseweb="popover"],
+[data-testid="stAppViewContainer"] [data-baseweb="menu"],
+[data-testid="stAppViewContainer"] [role="listbox"] {
+    color: var(--ck-text);
+}
+
+/* Inputs and dropdowns use white backgrounds with dark text */
+[data-testid="stAppViewContainer"] input,
+[data-testid="stAppViewContainer"] textarea,
+[data-testid="stAppViewContainer"] [data-baseweb="select"] *,
+[data-testid="stAppViewContainer"] [role="option"],
+[data-testid="stAppViewContainer"] [data-baseweb="menu"] * {
+    color: #25272b !important;
+}
+[data-testid="stAppViewContainer"] input::placeholder,
+[data-testid="stAppViewContainer"] textarea::placeholder {
+    color: #777b82 !important;
+    opacity: 1;
+}
+
+/* Light cards and metrics */
+[data-testid="stMetricLabel"] *,
+[data-testid="stMetricValue"] *,
+[data-testid="stMetricDelta"] * {
+    color: #25272b !important;
+}
+
+/* Dark surfaces must retain white text */
+.ck-page-header,
+.ck-page-header *,
+.stButton > button,
+.stButton > button *,
+[data-testid="stTabs"] button[aria-selected="true"],
+[data-testid="stTabs"] button[aria-selected="true"] * {
+    color: #ffffff !important;
+}
+
+/* Sidebar remains dark with readable white text */
+[data-testid="stSidebar"],
+[data-testid="stSidebar"] * {
+    color: #f7f7f7 !important;
+}
+[data-testid="stSidebar"] input,
+[data-testid="stSidebar"] textarea,
+[data-testid="stSidebar"] [data-baseweb="select"] * {
+    color: #25272b !important;
+}
+
+/* Unselected tabs sit on a light background */
+[data-testid="stTabs"] button[data-baseweb="tab"]:not([aria-selected="true"]),
+[data-testid="stTabs"] button[data-baseweb="tab"]:not([aria-selected="true"]) * {
+    color: #45484e !important;
+}
+
+/* Alert boxes: keep text readable on their light native backgrounds */
+[data-testid="stAlert"] div,
+[data-testid="stAlert"] p,
+[data-testid="stAlert"] span {
+    color: #25272b !important;
+}
+
+/* Download buttons follow the same dark-button rule */
+[data-testid="stDownloadButton"] button,
+[data-testid="stDownloadButton"] button * {
+    color: #ffffff !important;
+}
+</style>
+"""
+st.markdown(text_contrast_css, unsafe_allow_html=True)
+
+# -------------------------------------------------------------------
 # GOOGLE SHEET CONNECTION (SAFE VERSION)
 # -------------------------------------------------------------------
 scope = [
@@ -2318,7 +2407,7 @@ if st.session_state.page is None:
                 f"""
                 <div class="ck-login-brand">
                     {logo_html}
-                    <div class="ck-login-title"></div>
+                    <div class="ck-login-title">CEEKAY Tours</div>
                     <div class="ck-login-subtitle">
                         Management System<br>
                         Secure access for drivers and administrators

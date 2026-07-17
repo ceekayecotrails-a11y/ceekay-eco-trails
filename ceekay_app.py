@@ -2119,7 +2119,10 @@ if st.session_state.page is None:
 
     with login_center:
         try:
-            st.image("logo.png", width=170)
+            col1, col2, col3 = st.columns([1, 2, 1])
+
+with col2:
+    st.image("logo.png", width=140)
         except Exception:
             pass
 

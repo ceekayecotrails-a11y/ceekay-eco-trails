@@ -2097,97 +2097,150 @@ if "page" not in st.session_state:
     st.session_state.page = None
 
 
-menu = st.sidebar.selectbox("Login", ["Driver", "Admin"])
+# =====================================================
+# SHOW LOGIN ONLY WHEN USER IS NOT LOGGED IN
+# =====================================================
+if st.session_state.page is None:
 
-# DRIVER LOGIN
-if menu == "Driver":
+    st.markdown("## Welcome to CEEKAY Tours")
 
-    username = st.text_input("Driver Username")
-    password = st.text_input("Password", type="password")
+    menu = st.sidebar.selectbox(
+        "Login Type",
+        ["Driver", "Admin"]
+    )
 
-    if st.button("Login as Driver"):
-        d = driver_auth(username, password)
-        if d:
-            status = check_driver_status(d["driver_name"])
-            st.session_state["driver_status"] = status
-            st.session_state["page"] = "driver"
-            st.session_state["driver"] = d
-            st.rerun()
-        else:
-            st.error("Invalid Username or Password!")
+    # DRIVER LOGIN
+    if menu == "Driver":
+
+        username = st.text_input("Driver Username")
+        password = st.text_input(
+            "Password",
+            type="password"
+        )
+
+        if st.button("Login as Driver"):
+
+            d = driver_auth(username, password)
+
+            if d:
+                status = check_driver_status(
+                    d["driver_name"]
+                )
+
+                st.session_state.driver_status = status
+                st.session_state.page = "driver"
+                st.session_state.driver = d
+
+                st.rerun()
+
+            else:
+                st.error(
+                    "Invalid Username or Password!"
+                )
 
 
+    # ADMIN LOGIN
+    elif menu == "Admin":
+
+        pw = st.text_input(
+            "Admin Password",
+            type="password"
+        )
+
+        if st.button("Login as Admin"):
+
+            if pw == ADMIN_PASSWORD:
+
+                st.session_state.page = "admin"
+                st.session_state.is_admin_logged = True
+
+                st.rerun()
+
+            else:
+                st.error("Incorrect Password!")
+
+
+# =====================================================
 # DRIVER PAGES
-if st.session_state.get("page") == "driver":
+# =====================================================
+elif st.session_state.page == "driver":
 
     driver = st.session_state["driver"]
-    status = st.session_state.get("driver_status", "No Reports")
+
+    status = st.session_state.get(
+        "driver_status",
+        "No Reports"
+    )
 
     if status == "Incorrect":
-        st.error("There is an issue with your previous payment. Please contact CEEKAY Eco Trails soon !!!")
+
+        st.error(
+            "There is an issue with your previous payment. "
+            "Please contact CEEKAY Tours soon!"
+        )
+
         st.stop()
 
-    if status == "Pending":
-        st.warning("Your last report is still under review.")
-        st.info("You can view reports, but cannot submit a new one until it's confirmed.")
+    page = sidebar_menu("driver")
 
-        page = sidebar_menu("driver")
+    if status == "Pending":
+
+        st.warning(
+            "Your last report is still under review."
+        )
+
+        st.info(
+            "You can view reports, but cannot submit "
+            "a new one until it is confirmed."
+        )
 
         if page == "Dashboard":
             page_driver_dashboard(driver)
 
         elif page == "Daily Report":
-            st.error("You cannot submit a new report until admin confirms your last report.")
-
-
-
+            st.error(
+                "You cannot submit a new report until "
+                "admin confirms your last report."
+            )
 
         elif page == "Earnings Report":
-            page_earnings_report("driver", driver)
+            page_earnings_report(
+                "driver",
+                driver
+            )
 
-        elif page == "Logout":
-            st.session_state.page = None
-            st.session_state.driver = None
-            st.session_state.driver_status = None
-            st.rerun()
+    else:
 
-    if status == "Correct" or status == "No Reports":
-    
-        st.success("Have a good day. The vehicle is ready for today")
-    
-        page = sidebar_menu("driver")
-    
+        st.success(
+            "Have a good day. "
+            "The vehicle is ready for today."
+        )
+
         if page == "Dashboard":
             page_driver_dashboard(driver)
-    
+
         elif page == "Daily Report":
             page_driver_form(driver)
-    
+
         elif page == "Earnings Report":
-            page_earnings_report("driver", driver)
-    
-        elif page == "Logout":
-            st.session_state.page = None
-            st.session_state.driver = None
-            st.session_state.driver_status = None
-            st.rerun()
-       
+            page_earnings_report(
+                "driver",
+                driver
+            )
 
-# ADMIN LOGIN
-if menu == "Admin":
+    if page == "Logout":
 
-    pw = st.text_input("Admin Password", type="password")
+        st.session_state.page = None
+        st.session_state.driver = None
+        st.session_state.driver_status = None
 
-    if st.button("Login as Admin"):
-        if pw == ADMIN_PASSWORD:
-            st.session_state["page"] = "admin"
-            st.session_state["is_admin_logged"] = True
-            st.rerun()
-        else:
-            st.error("Incorrect Password!")
+        st.rerun()
 
+
+# =====================================================
 # ADMIN PAGES
-if st.session_state.get("page") == "admin":
+# =====================================================
+elif st.session_state.page == "admin":
 
     page = sidebar_menu("admin")
 
@@ -2207,7 +2260,8 @@ if st.session_state.get("page") == "admin":
         page_admin_submissions()
 
     elif page == "Logout":
+
         st.session_state.page = None
         st.session_state.is_admin_logged = False
-        st.rerun()
 
+        st.rerun()

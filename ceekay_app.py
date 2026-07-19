@@ -39,268 +39,392 @@ st.markdown(
 modern_css = """
 <style>
 :root {
-    --ck-primary: #34373c;
-    --ck-primary-2: #4a4d52;
-    --ck-accent: #c39a3b;
-    --ck-accent-soft: #f5ecd8;
-    --ck-bg: #f4f5f7;
-    --ck-card: #ffffff;
-    --ck-text: #25272b;
-    --ck-muted: #70737a;
-    --ck-border: #dfe1e5;
-    --ck-dark-border: #555960;
-    --ck-success: #18864b;
-    --ck-warning: #b7791f;
-    --ck-danger: #c0392b;
+    --ck-primary: #303238;
+    --ck-primary-hover: #3d4047;
+    --ck-sidebar-start: #25272c;
+    --ck-sidebar-end: #35383f;
+    --ck-accent: #b88a2d;
+    --ck-accent-hover: #9d7422;
+    --ck-accent-soft: #f8f1e3;
+    --ck-bg: #f3f4f6;
+    --ck-surface: #ffffff;
+    --ck-surface-soft: #fafafa;
+    --ck-text: #202226;
+    --ck-text-soft: #5f636b;
+    --ck-muted: #7b7f87;
+    --ck-border: #e1e3e7;
+    --ck-border-strong: #d1d4da;
+    --ck-success: #197447;
+    --ck-warning: #9b6818;
+    --ck-danger: #b33a32;
+    --ck-info: #315f8f;
+    --ck-radius-sm: 9px;
+    --ck-radius-md: 14px;
+    --ck-radius-lg: 20px;
+    --ck-shadow-sm: 0 4px 14px rgba(30, 32, 36, .055);
+    --ck-shadow-md: 0 10px 30px rgba(30, 32, 36, .08);
+    --ck-shadow-lg: 0 20px 55px rgba(30, 32, 36, .13);
 }
 
+/* Application shell */
 #MainMenu, footer {visibility: hidden;}
-header[data-testid="stHeader"] {background: transparent;}
-
+header[data-testid="stHeader"] {
+    background: rgba(243, 244, 246, .84);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(225, 227, 231, .8);
+}
 .stApp {
     background:
-        radial-gradient(circle at top right, rgba(201,167,93,.10), transparent 30%),
-        var(--ck-bg);
+        radial-gradient(circle at 90% 0%, rgba(184, 138, 45, .08), transparent 25rem),
+        linear-gradient(180deg, #f7f7f8 0%, var(--ck-bg) 100%);
     color: var(--ck-text);
 }
-
 .block-container {
-    max-width: 1480px;
-    padding-top: 1.3rem;
-    padding-bottom: 3rem;
+    max-width: 1500px;
+    padding-top: 1.35rem;
+    padding-bottom: 3.5rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
 }
 
+/* Typography */
+html, body, [class*="css"] {
+    font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+h1, h2, h3, h4 {
+    color: var(--ck-primary);
+    letter-spacing: -.025em;
+    line-height: 1.2;
+}
+h1 {font-weight: 720;}
+h2 {font-weight: 680;}
+h3, h4 {font-weight: 650;}
+p, label, li {color: var(--ck-text);}
+small, .stCaption, [data-testid="stCaptionContainer"] {color: var(--ck-muted) !important;}
+
+/* Sidebar */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #2b2d31 0%, #34373c 58%, #3f4248 100%);
-    border-right: 1px solid #4a4d52;
-    box-shadow: 8px 0 30px rgba(0,0,0,.10);
+    background:
+        radial-gradient(circle at 50% -10%, rgba(184, 138, 45, .17), transparent 16rem),
+        linear-gradient(180deg, var(--ck-sidebar-start) 0%, var(--ck-sidebar-end) 100%);
+    border-right: 1px solid rgba(255,255,255,.06);
+    box-shadow: 10px 0 35px rgba(24, 25, 28, .12);
 }
-
-[data-testid="stSidebar"] * {color: #f7f7f7;}
-[data-testid="stSidebar"] hr {border-color: rgba(255,255,255,.12);}
+[data-testid="stSidebar"] > div:first-child {padding-top: 1.1rem;}
+[data-testid="stSidebar"] * {color: #f6f6f7 !important;}
+[data-testid="stSidebar"] hr {border-color: rgba(255,255,255,.11);}
+[data-testid="stSidebar"] [data-testid="stImage"] {
+    display: flex;
+    justify-content: center;
+}
 [data-testid="stSidebar"] [data-testid="stImage"] img {
-    filter: drop-shadow(0 7px 18px rgba(0,0,0,.28));
+    filter: drop-shadow(0 10px 22px rgba(0,0,0,.27));
 }
-
+[data-testid="stSidebar"] [role="radiogroup"] {gap: .25rem;}
 [data-testid="stSidebar"] [role="radiogroup"] label {
+    min-height: 44px;
     background: transparent;
     border: 1px solid transparent;
     border-radius: 11px;
-    padding: .48rem .62rem;
-    margin: .14rem 0;
-    transition: all .18s ease;
+    padding: .52rem .68rem;
+    margin: .08rem 0;
+    transition: background .16s ease, border-color .16s ease, transform .16s ease;
 }
-
 [data-testid="stSidebar"] [role="radiogroup"] label:hover {
-    background: rgba(255,255,255,.08);
+    background: rgba(255,255,255,.075);
     border-color: rgba(255,255,255,.08);
     transform: translateX(2px);
 }
-
 [data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {
-    background: linear-gradient(90deg, rgba(201,167,93,.24), rgba(255,255,255,.08));
-    border-color: rgba(201,167,93,.40);
-    box-shadow: inset 3px 0 0 var(--ck-accent);
+    background: linear-gradient(90deg, rgba(184,138,45,.25), rgba(255,255,255,.075));
+    border-color: rgba(218,181,105,.30);
+    box-shadow: inset 3px 0 0 #d1a54b;
 }
 
-h1, h2, h3 {
-    color: var(--ck-primary);
-    letter-spacing: -.025em;
-}
-
+/* Page heading components */
 .ck-page-header {
-    background: linear-gradient(135deg, #34373c 0%, #45484e 72%, #565047 100%);
-    color: white;
-    border: 1px solid #5a5d63;
-    border-radius: 18px;
-    padding: 23px 27px;
-    margin-bottom: 18px;
-    box-shadow: 0 12px 32px rgba(0,0,0,.18);
+    background:
+        radial-gradient(circle at 88% 18%, rgba(218,181,105,.18), transparent 12rem),
+        linear-gradient(135deg, #2c2e33 0%, #3b3e45 72%, #47433b 100%);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: var(--ck-radius-lg);
+    padding: 25px 29px;
+    margin-bottom: 20px;
+    box-shadow: var(--ck-shadow-md);
     position: relative;
     overflow: hidden;
 }
-.ck-page-header::after {
+.ck-page-header::before {
     content: "";
     position: absolute;
-    right: -45px;
-    top: -65px;
-    width: 180px;
-    height: 180px;
-    border-radius: 50%;
-    border: 1px solid rgba(201,167,93,.30);
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, #e0bd72, var(--ck-accent));
 }
-.ck-page-header h2 {color: white; margin: 0; font-size: 1.68rem;}
-.ck-page-header p {margin: 5px 0 0; color: rgba(255,255,255,.72);}
-
-[data-testid="stMetric"] {
-    background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
-    border: 1px solid var(--ck-border);
-    border-top: 3px solid var(--ck-accent);
-    border-radius: 15px;
-    padding: 16px 18px;
-    box-shadow: 0 7px 20px rgba(0,0,0,.06);
-}
-[data-testid="stMetricLabel"] {color: var(--ck-muted); font-weight: 650;}
-[data-testid="stMetricValue"] {color: #25272b; font-weight: 450;}
-
-[data-testid="stTabs"] [data-baseweb="tab-list"] {
-    gap: 8px;
-    background: #e5e5e7;
-    padding: 5px;
-    border-radius: 12px;
-    border: 1px solid #d6d6d9;
-}
-[data-testid="stTabs"] button[data-baseweb="tab"] {
-    border-radius: 9px;
-    height: 42px;
-    padding-left: 18px;
-    padding-right: 18px;
-    color: #56565a;
-}
-[data-testid="stTabs"] button[data-baseweb="tab"]:hover {
-    color: #34373c;
-}
-[data-testid="stTabs"] button[aria-selected="true"] {
-    background: #45484e;
-    color: white;
-    box-shadow: 0 3px 10px rgba(0,0,0,.18);
-}
-
-[data-testid="stVerticalBlockBorderWrapper"] {
-    background: var(--ck-card);
-    border-color: var(--ck-border) !important;
-    border-radius: 16px;
-    box-shadow: 0 8px 25px rgba(0,0,0,.07);
-}
-
-[data-testid="stDataFrame"] {
-    background: white;
-    border: 1px solid var(--ck-border);
-    border-radius: 13px;
-    overflow: hidden;
-    box-shadow: 0 5px 16px rgba(0,0,0,.045);
-}
-
-.stButton > button {
-    background: linear-gradient(180deg, #4a4d52, #34373c);
-    color: white;
-    border: 1px solid #2b2d31;
-    border-radius: 10px;
-    min-height: 42px;
+.ck-page-header h2 {color: #fff !important; margin: 0; font-size: 1.72rem; font-weight: 680;}
+.ck-page-header p {margin: 7px 0 0; color: rgba(255,255,255,.70) !important; max-width: 760px;}
+.title-text {
+    color: var(--ck-primary);
+    font-size: 1.72rem;
     font-weight: 680;
-    box-shadow: 0 5px 14px rgba(0,0,0,.20);
-    transition: all .18s ease;
+    letter-spacing: -.025em;
+    margin: .2rem 0 1.1rem;
 }
-.stButton > button:hover {
-    background: linear-gradient(180deg, #5a5e64, #45484e);
-    color: #f1d89e;
-    border-color: var(--ck-accent);
-    transform: translateY(-1px);
-}
-.stButton > button:focus {box-shadow: 0 0 0 3px rgba(201,167,93,.22);}
-
-[data-testid="stDateInput"] input,
-[data-testid="stTextInput"] input,
-[data-testid="stNumberInput"] input,
-[data-baseweb="select"] > div,
-[data-testid="stTextArea"] textarea {
-    background: white;
-    border-color: #d3d3d6;
-    border-radius: 10px;
-}
-[data-testid="stDateInput"] input:focus,
-[data-testid="stTextInput"] input:focus,
-[data-testid="stNumberInput"] input:focus,
-[data-testid="stTextArea"] textarea:focus {
-    border-color: var(--ck-accent);
-    box-shadow: 0 0 0 2px rgba(201,167,93,.16);
-}
-
-[data-testid="stAlert"] {border-radius: 12px;}
-
 .ck-section-title {
-    font-size: 1.08rem;
-    font-weight: 780;
-    color: #34373c;
-    margin: .2rem 0 .65rem;
-    padding-left: 10px;
+    font-size: 1.05rem;
+    font-weight: 680;
+    color: var(--ck-primary);
+    margin: .35rem 0 .75rem;
+    padding-left: 11px;
     border-left: 3px solid var(--ck-accent);
 }
+.ck-vehicle-title {font-size: 1.18rem; font-weight: 680; color: var(--ck-primary);}
 
-.ck-vehicle-title {
-    font-size: 1.20rem;
-    font-weight: 820;
-    color: #34373c;
-    margin-bottom: .25rem;
+/* Metrics */
+[data-testid="stMetric"] {
+    background: linear-gradient(180deg, #ffffff 0%, #fbfbfc 100%);
+    border: 1px solid var(--ck-border);
+    border-top: 3px solid var(--ck-accent);
+    border-radius: var(--ck-radius-md);
+    padding: 17px 18px 16px;
+    box-shadow: var(--ck-shadow-sm);
+    min-height: 112px;
+    transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+[data-testid="stMetric"]:hover {
+    transform: translateY(-2px);
+    border-color: #d7c298;
+    box-shadow: var(--ck-shadow-md);
+}
+[data-testid="stMetricLabel"] {color: var(--ck-text-soft) !important; font-weight: 560 !important;}
+[data-testid="stMetricLabel"] * {color: var(--ck-text-soft) !important;}
+[data-testid="stMetricValue"] {color: var(--ck-text) !important; font-weight: 480 !important; letter-spacing: -.02em;}
+[data-testid="stMetricValue"] * {color: var(--ck-text) !important; font-weight: 480 !important;}
+[data-testid="stMetricDelta"] * {font-weight: 560 !important;}
+
+/* Tabs */
+[data-testid="stTabs"] [data-baseweb="tab-list"] {
+    gap: 5px;
+    background: #e8e9ec;
+    padding: 5px;
+    border-radius: 12px;
+    border: 1px solid #dcdee3;
+    overflow-x: auto;
+}
+[data-testid="stTabs"] button[data-baseweb="tab"] {
+    border-radius: 8px;
+    height: 42px;
+    padding: 0 17px;
+    color: #555960 !important;
+    font-weight: 560;
+    transition: all .16s ease;
+}
+[data-testid="stTabs"] button[data-baseweb="tab"] * {color: inherit !important;}
+[data-testid="stTabs"] button[data-baseweb="tab"]:hover {background: rgba(255,255,255,.65); color: var(--ck-primary) !important;}
+[data-testid="stTabs"] button[aria-selected="true"] {
+    background: #3d4047;
+    color: #fff !important;
+    box-shadow: 0 4px 12px rgba(30,32,36,.17);
+}
+[data-testid="stTabs"] button[aria-selected="true"] * {color: #fff !important;}
+
+/* Cards, expanders and containers */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background: var(--ck-surface);
+    border: 1px solid var(--ck-border) !important;
+    border-radius: var(--ck-radius-md);
+    box-shadow: var(--ck-shadow-sm);
+}
+[data-testid="stExpander"] {
+    background: var(--ck-surface);
+    border: 1px solid var(--ck-border) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 3px 12px rgba(30,32,36,.04);
+    overflow: hidden;
+}
+[data-testid="stExpander"] summary {font-weight: 600; color: var(--ck-primary) !important;}
+
+/* Forms and labels */
+[data-testid="stForm"] {
+    background: rgba(255,255,255,.76);
+    border: 1px solid var(--ck-border);
+    border-radius: var(--ck-radius-md);
+    padding: 1.1rem;
+    box-shadow: var(--ck-shadow-sm);
+}
+[data-testid="stWidgetLabel"] p {color: #464a51 !important; font-weight: 560 !important;}
+[data-testid="stTextInput"] input,
+[data-testid="stNumberInput"] input,
+[data-testid="stDateInput"] input,
+[data-testid="stTextArea"] textarea,
+[data-baseweb="select"] > div {
+    background: #fff !important;
+    color: var(--ck-text) !important;
+    border: 1px solid var(--ck-border-strong) !important;
+    border-radius: var(--ck-radius-sm) !important;
+    min-height: 42px;
+    box-shadow: none !important;
+}
+[data-testid="stTextInput"] input:hover,
+[data-testid="stNumberInput"] input:hover,
+[data-testid="stDateInput"] input:hover,
+[data-testid="stTextArea"] textarea:hover,
+[data-baseweb="select"] > div:hover {border-color: #b9bdc5 !important;}
+[data-testid="stTextInput"] input:focus,
+[data-testid="stNumberInput"] input:focus,
+[data-testid="stDateInput"] input:focus,
+[data-testid="stTextArea"] textarea:focus {
+    border-color: var(--ck-accent) !important;
+    box-shadow: 0 0 0 3px rgba(184,138,45,.13) !important;
+}
+input::placeholder, textarea::placeholder {color: #8b8f96 !important; opacity: 1;}
+
+/* Buttons */
+.stButton > button,
+[data-testid="stDownloadButton"] > button,
+[data-testid="stFormSubmitButton"] > button {
+    background: linear-gradient(180deg, #44474e 0%, #303238 100%);
+    color: #fff !important;
+    border: 1px solid #292b30;
+    border-radius: 10px;
+    min-height: 42px;
+    padding: .55rem 1rem;
+    font-weight: 620;
+    box-shadow: 0 5px 14px rgba(30,32,36,.16);
+    transition: all .16s ease;
+}
+.stButton > button *, [data-testid="stDownloadButton"] > button *, [data-testid="stFormSubmitButton"] > button * {color: #fff !important;}
+.stButton > button:hover,
+[data-testid="stDownloadButton"] > button:hover,
+[data-testid="stFormSubmitButton"] > button:hover {
+    background: linear-gradient(180deg, #52555d 0%, #3b3e45 100%);
+    border-color: var(--ck-accent);
+    color: #f2d89d !important;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(30,32,36,.20);
+}
+.stButton > button:hover *, [data-testid="stDownloadButton"] > button:hover *, [data-testid="stFormSubmitButton"] > button:hover * {color: #f2d89d !important;}
+.stButton > button:focus {box-shadow: 0 0 0 3px rgba(184,138,45,.20) !important;}
+.stButton > button:disabled {opacity: .55; transform: none;}
+
+/* Dataframes and tables */
+[data-testid="stDataFrame"] {
+    background: #fff;
+    border: 1px solid var(--ck-border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--ck-shadow-sm);
+}
+[data-testid="stTable"] {border: 1px solid var(--ck-border); border-radius: 12px; overflow: hidden;}
+[data-testid="stTable"] th {background: #f1f2f4 !important; color: var(--ck-primary) !important;}
+[data-testid="stTable"] td {background: #fff !important; color: var(--ck-text) !important;}
+
+/* Alerts */
+[data-testid="stAlert"] {
+    border-radius: 11px;
+    border-width: 1px;
+    box-shadow: 0 3px 12px rgba(30,32,36,.04);
+}
+[data-testid="stAlert"] p, [data-testid="stAlert"] span, [data-testid="stAlert"] div {color: #26282d !important;}
+
+/* Radio / checkbox / toggle */
+[data-testid="stRadio"] label, [data-testid="stCheckbox"] label {color: var(--ck-text) !important;}
+[data-testid="stRadio"] label p, [data-testid="stCheckbox"] label p {color: var(--ck-text) !important;}
+
+/* Charts */
+[data-testid="stPlotlyChart"] {
+    background: #fff;
+    border: 1px solid var(--ck-border);
+    border-radius: var(--ck-radius-md);
+    padding: .35rem;
+    box-shadow: var(--ck-shadow-sm);
+    overflow: hidden;
 }
 
-.ck-login-brand {
-    text-align: center;
-    padding: 9px 8px 18px;
+/* Dropdown portal and options */
+[data-baseweb="select"] *, [data-baseweb="select"] svg {
+    color: var(--ck-text) !important;
+    fill: var(--ck-text) !important;
 }
+body [data-baseweb="popover"],
+body [data-baseweb="menu"],
+body [role="listbox"] {
+    background: #fff !important;
+    color: var(--ck-text) !important;
+    border-radius: 10px !important;
+    box-shadow: var(--ck-shadow-lg) !important;
+}
+body [role="option"], body [role="option"] *,
+body [data-baseweb="menu"] li, body [data-baseweb="menu"] li * {
+    color: var(--ck-text) !important;
+    background: #fff !important;
+}
+body [role="option"]:hover, body [role="option"]:hover *,
+body [role="option"][aria-selected="true"], body [role="option"][aria-selected="true"] * {
+    color: #17191d !important;
+    background: #f0f1f3 !important;
+}
+[data-baseweb="tag"] {background: #e9eaed !important; border-radius: 7px !important;}
+[data-baseweb="tag"], [data-baseweb="tag"] *, [data-baseweb="tag"] svg {color: var(--ck-text) !important; fill: var(--ck-text) !important;}
+
+/* Login */
+.ck-login-brand {text-align: center; padding: 12px 8px 20px;}
 .ck-login-logo {
     display: block;
-    width: 170px;
+    width: 168px;
     max-width: 58%;
     height: auto;
-    margin: 0 auto 15px;
-    filter: drop-shadow(0 8px 18px rgba(0,0,0,.13));
+    margin: 0 auto 17px;
+    filter: drop-shadow(0 9px 22px rgba(0,0,0,.12));
 }
-.ck-login-title {
-    color: #34373c;
-    font-size: 1.70rem;
-    font-weight: 850;
-    line-height: 1.2;
-    margin: 0;
-}
+.ck-login-title {color: var(--ck-primary); font-size: 1.72rem; font-weight: 700; line-height: 1.18; margin: 0;}
 .ck-login-title::after {
     content: "";
     display: block;
-    width: 44px;
+    width: 46px;
     height: 3px;
-    margin: 11px auto 0;
+    margin: 12px auto 0;
     border-radius: 5px;
-    background: var(--ck-accent);
+    background: linear-gradient(90deg, #d3ad5d, var(--ck-accent));
 }
-.ck-login-subtitle {
-    color: var(--ck-muted);
-    font-size: .95rem;
-    margin: 10px 0 0;
-}
-.ck-login-footer {
-    text-align: center;
-    color: var(--ck-muted);
-    font-size: .78rem;
-    margin-top: 18px;
-}
-
-/* Login screen ambience without altering its logic */
+.ck-login-subtitle {color: var(--ck-muted); font-size: .94rem; margin: 11px 0 0;}
+.ck-login-footer {text-align: center; color: var(--ck-muted); font-size: .78rem; margin-top: 19px;}
 body:has(.ck-login-brand) .stApp {
     background:
-        radial-gradient(circle at 18% 15%, rgba(201,167,93,.14), transparent 25%),
-        radial-gradient(circle at 85% 80%, rgba(52,55,60,.08), transparent 30%),
-        #f1f2f4;
+        radial-gradient(circle at 15% 12%, rgba(184,138,45,.13), transparent 25rem),
+        radial-gradient(circle at 85% 85%, rgba(48,50,56,.075), transparent 28rem),
+        #f2f3f5;
 }
 body:has(.ck-login-brand) [data-testid="stVerticalBlockBorderWrapper"] {
-    border: 1px solid #d7d7da !important;
-    border-top: 4px solid #45484e !important;
-    box-shadow: 0 18px 48px rgba(0,0,0,.14);
+    border: 1px solid #dadce1 !important;
+    border-top: 4px solid #3d4047 !important;
+    box-shadow: var(--ck-shadow-lg);
 }
+.center-logo [data-testid="stImage"] {display: flex; justify-content: center;}
 
-hr {border-color: #d8d8da;}
-a {color: #8a6823;}
+/* Miscellaneous */
+hr {border-color: #dfe1e5; margin: 1.45rem 0;}
+a {color: #86631f;}
+code {background: #eceef1; color: #34373c; border-radius: 5px; padding: .08rem .3rem;}
 
-@media (max-width: 768px) {
-    .block-container {padding-left: .8rem; padding-right: .8rem;}
+@media (max-width: 900px) {
+    .block-container {padding-left: 1rem; padding-right: 1rem; padding-top: 1rem;}
+    .ck-page-header {padding: 21px; border-radius: 16px;}
+    [data-testid="stMetric"] {min-height: 103px;}
+}
+@media (max-width: 640px) {
+    .block-container {padding-left: .72rem; padding-right: .72rem;}
     .ck-page-header {padding: 18px; border-radius: 14px;}
-    [data-testid="stTabs"] button[data-baseweb="tab"] {
-        padding-left: 9px;
-        padding-right: 9px;
-        font-size: .82rem;
-    }
-    .ck-login-logo {width: 145px;}
+    .ck-page-header h2 {font-size: 1.42rem;}
+    [data-testid="stTabs"] button[data-baseweb="tab"] {padding: 0 10px; font-size: .82rem;}
+    .ck-login-logo {width: 140px;}
+    .ck-login-title {font-size: 1.45rem;}
 }
 </style>
+
 """
 st.markdown(modern_css, unsafe_allow_html=True)
 
@@ -309,129 +433,13 @@ st.markdown(modern_css, unsafe_allow_html=True)
 # -------------------------------------------------------------------
 text_contrast_css = """
 <style>
-/* Main light workspace: use dark text */
-[data-testid="stAppViewContainer"] .main,
-[data-testid="stAppViewContainer"] .main p,
-[data-testid="stAppViewContainer"] .main span,
-[data-testid="stAppViewContainer"] .main label,
-[data-testid="stAppViewContainer"] .main li,
-[data-testid="stAppViewContainer"] .main div[data-testid="stMarkdownContainer"] {
-    color: var(--ck-text);
-}
-
-/* White and light surfaces */
-[data-testid="stAppViewContainer"] [data-testid="stVerticalBlockBorderWrapper"],
-[data-testid="stAppViewContainer"] [data-testid="stMetric"],
-[data-testid="stAppViewContainer"] [data-testid="stDataFrame"],
-[data-testid="stAppViewContainer"] [data-baseweb="popover"],
-[data-testid="stAppViewContainer"] [data-baseweb="menu"],
-[data-testid="stAppViewContainer"] [role="listbox"] {
-    color: var(--ck-text);
-}
-
-/* Inputs and dropdowns use white backgrounds with dark text */
+/* Compatibility contrast layer for Streamlit portal elements */
+[data-testid="stAppViewContainer"] .main { color: var(--ck-text); }
 [data-testid="stAppViewContainer"] input,
-[data-testid="stAppViewContainer"] textarea,
-[data-testid="stAppViewContainer"] [data-baseweb="select"] *,
-[data-testid="stAppViewContainer"] [role="option"],
-[data-testid="stAppViewContainer"] [data-baseweb="menu"] * {
-    color: #25272b !important;
-}
-[data-testid="stAppViewContainer"] input::placeholder,
-[data-testid="stAppViewContainer"] textarea::placeholder {
-    color: #777b82 !important;
-    opacity: 1;
-}
-
-/* Light cards and metrics */
-[data-testid="stMetricLabel"] *,
-[data-testid="stMetricValue"] *,
-[data-testid="stMetricDelta"] * {
-    color: #25272b !important;
-}
-
-/* Dark surfaces must retain white text */
-.ck-page-header,
-.ck-page-header *,
-.stButton > button,
-.stButton > button *,
-[data-testid="stTabs"] button[aria-selected="true"],
-[data-testid="stTabs"] button[aria-selected="true"] * {
-    color: #ffffff !important;
-}
-
-/* Sidebar remains dark with readable white text */
-[data-testid="stSidebar"],
-[data-testid="stSidebar"] * {
-    color: #f7f7f7 !important;
-}
+[data-testid="stAppViewContainer"] textarea { color: var(--ck-text) !important; }
 [data-testid="stSidebar"] input,
 [data-testid="stSidebar"] textarea,
-[data-testid="stSidebar"] [data-baseweb="select"] * {
-    color: #25272b !important;
-}
-
-/* Unselected tabs sit on a light background */
-[data-testid="stTabs"] button[data-baseweb="tab"]:not([aria-selected="true"]),
-[data-testid="stTabs"] button[data-baseweb="tab"]:not([aria-selected="true"]) * {
-    color: #45484e !important;
-}
-
-/* Alert boxes: keep text readable on their light native backgrounds */
-[data-testid="stAlert"] div,
-[data-testid="stAlert"] p,
-[data-testid="stAlert"] span {
-    color: #25272b !important;
-}
-
-/* Download buttons follow the same dark-button rule */
-[data-testid="stDownloadButton"] button,
-[data-testid="stDownloadButton"] button * {
-    color: #ffffff !important;
-}
-
-/* Dropdown selected values and menus can render in a portal outside the app container. */
-[data-baseweb="select"] > div,
-[data-baseweb="select"] input,
-[data-baseweb="select"] span,
-[data-baseweb="select"] div,
-[data-baseweb="select"] svg {
-    color: #25272b !important;
-    fill: #25272b !important;
-}
-
-/* Open dropdown menu and every option */
-body [data-baseweb="popover"],
-body [data-baseweb="menu"],
-body [role="listbox"] {
-    background: #ffffff !important;
-    color: #25272b !important;
-}
-body [role="option"],
-body [role="option"] *,
-body [data-baseweb="menu"] li,
-body [data-baseweb="menu"] li * {
-    color: #25272b !important;
-    background-color: #ffffff !important;
-}
-body [role="option"]:hover,
-body [role="option"][aria-selected="true"],
-body [role="option"]:hover *,
-body [role="option"][aria-selected="true"] * {
-    color: #161719 !important;
-    background-color: #ececef !important;
-}
-
-/* Multiselect selected chips */
-[data-baseweb="tag"] {
-    background: #e6e7e9 !important;
-}
-[data-baseweb="tag"],
-[data-baseweb="tag"] *,
-[data-baseweb="tag"] svg {
-    color: #25272b !important;
-    fill: #25272b !important;
-}
+[data-testid="stSidebar"] [data-baseweb="select"] * { color: var(--ck-text) !important; }
 </style>
 """
 st.markdown(text_contrast_css, unsafe_allow_html=True)

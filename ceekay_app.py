@@ -36,181 +36,196 @@ st.markdown(
 # -------------------------------------------------------------------
 # MODERN CEEKAY SOFT CHARCOAL UI THEME
 # -------------------------------------------------------------------
-modern_css = """
+modern_css = r"""
 <style>
 :root {
-  --navy:#111a2b;
-  --navy-2:#172238;
-  --navy-3:#22304b;
-  --ink:#101828;
-  --muted:#667085;
-  --canvas:#f3f6fa;
+  --primary:#0f766e;
+  --primary-dark:#115e59;
+  --primary-soft:#ecfdf8;
+  --sidebar:#0b1726;
+  --sidebar-2:#10243a;
+  --ink:#172033;
+  --muted:#6b7688;
+  --canvas:#f4f7fb;
   --card:#ffffff;
-  --border:#dfe5ec;
-  --shadow:0 12px 30px rgba(16,24,40,.07);
-  --shadow-hover:0 18px 42px rgba(16,24,40,.12);
-  --accent:#ff5a5f;
-  --accent-soft:#fff0f1;
-  --success:#12a66a;
-  --radius:18px;
+  --border:#e4e9f1;
+  --border-strong:#d5dce7;
+  --success:#0f9f6e;
+  --warning:#d97706;
+  --danger:#dc3545;
+  --shadow:0 8px 26px rgba(22,32,51,.06);
+  --shadow-hover:0 14px 34px rgba(22,32,51,.10);
+  --radius:16px;
 }
 
 #MainMenu, footer {visibility:hidden;}
-header[data-testid="stHeader"] {background:#fff; border-bottom:1px solid #edf0f4;}
+header[data-testid="stHeader"] {
+  background:rgba(255,255,255,.92);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(14px);
+}
 [data-testid="stToolbar"] {right:1rem;}
-
-html, body, [class*="css"] {font-family:Inter, "Segoe UI", Arial, sans-serif;}
+html, body, [class*="css"] {font-family:Inter,"Segoe UI",Arial,sans-serif;}
 .stApp {background:var(--canvas); color:var(--ink);}
-.block-container {max-width:1500px; padding:4.2rem 3.2rem 4rem;}
+.block-container {max-width:1480px; padding:4.7rem 2.6rem 3.5rem;}
 
-/* Sidebar: strong, simple, premium */
+/* SIDEBAR */
 [data-testid="stSidebar"] {
-  background:linear-gradient(180deg,var(--navy) 0%, #0e1727 100%);
+  background:linear-gradient(180deg,var(--sidebar) 0%,var(--sidebar-2) 100%);
   border-right:1px solid rgba(255,255,255,.05);
-  box-shadow:12px 0 36px rgba(16,24,40,.10);
+  box-shadow:12px 0 34px rgba(10,23,38,.12);
 }
-[data-testid="stSidebar"] > div:first-child {padding-top:1.25rem;}
-[data-testid="stSidebar"] [data-testid="stImage"] {margin:0 auto .25rem;}
+[data-testid="stSidebar"] > div:first-child {padding:1.15rem .8rem 1.5rem;}
+[data-testid="stSidebar"] [data-testid="stImage"] {margin:.15rem auto .3rem;}
 [data-testid="stSidebar"] [data-testid="stImage"] img {
-  max-height:110px; object-fit:contain; filter:drop-shadow(0 8px 18px rgba(0,0,0,.22));
+  max-height:100px; object-fit:contain; filter:drop-shadow(0 7px 16px rgba(0,0,0,.20));
 }
-[data-testid="stSidebar"] hr {margin:1rem 0 1.15rem; border-color:rgba(255,255,255,.08);}
-[data-testid="stSidebar"] [role="radiogroup"] {gap:.12rem;}
+[data-testid="stSidebar"] hr {margin:1rem .2rem; border-color:rgba(255,255,255,.10);}
+[data-testid="stSidebar"] [role="radiogroup"] {gap:.18rem;}
 [data-testid="stSidebar"] [role="radiogroup"] label {
-  min-height:42px; padding:.58rem .72rem; margin:.05rem 0;
-  border-radius:10px; border:1px solid transparent; transition:.16s ease;
+  min-height:46px; padding:.68rem .78rem; margin:.03rem 0; border-radius:11px;
+  border:1px solid transparent; transition:.17s ease;
 }
 [data-testid="stSidebar"] [role="radiogroup"] label:hover {
   background:rgba(255,255,255,.07); transform:translateX(2px);
 }
 [data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {
-  background:rgba(255,255,255,.10); border-color:rgba(255,255,255,.09);
-  box-shadow:inset 3px 0 0 var(--accent);
+  background:linear-gradient(90deg,rgba(15,118,110,.34),rgba(15,118,110,.14));
+  border-color:rgba(94,234,212,.18); box-shadow:inset 3px 0 0 #2dd4bf;
 }
-[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) p {font-weight:700;}
-[data-testid="stSidebar"] [role="radio"] {
-  width:18px; height:18px; border:2px solid rgba(255,255,255,.9); background:#fff;
-}
-[data-testid="stSidebar"] [role="radio"][aria-checked="true"] {
-  background:var(--accent); border-color:var(--accent); box-shadow:inset 0 0 0 5px var(--accent);
-}
+[data-testid="stSidebar"] [role="radiogroup"] label p {font-size:.94rem; font-weight:560;}
+[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) p {font-weight:720;}
+[data-testid="stSidebar"] [role="radio"] {display:none;}
 
-/* Page hierarchy inspired by reference */
-h1 {font-size:2.65rem !important; line-height:1.08; font-weight:800 !important; letter-spacing:-.045em;}
-h2 {font-size:2rem !important; line-height:1.15; font-weight:780 !important; letter-spacing:-.035em;}
-h3 {font-size:1.35rem !important; font-weight:730 !important; letter-spacing:-.02em;}
+/* TYPOGRAPHY */
+h1 {font-size:2.35rem !important; line-height:1.1; font-weight:760 !important; letter-spacing:-.035em;}
+h2 {font-size:1.85rem !important; line-height:1.16; font-weight:740 !important; letter-spacing:-.027em;}
+h3 {font-size:1.25rem !important; font-weight:700 !important; letter-spacing:-.015em;}
 h1,h2,h3,h4 {color:var(--ink);}
-p, label, .stCaption {color:var(--muted);}
+p,label,.stCaption {color:var(--muted);}
 .title-text {
-  font-size:2.65rem; line-height:1.08; font-weight:800; letter-spacing:-.045em;
-  color:var(--ink); margin:.1rem 0 1.5rem;
+  font-size:2.25rem; line-height:1.1; font-weight:760; letter-spacing:-.035em;
+  color:var(--ink); margin:.05rem 0 1.55rem;
 }
-
-/* Executive header becomes clean, not decorative */
-.ck-page-header {
-  background:transparent; border:0; border-radius:0; padding:0; margin:.2rem 0 1.7rem;
-  box-shadow:none; overflow:visible;
+.title-text::after,.ck-page-header h2::after {
+  content:""; display:block; width:46px; height:4px; margin-top:.75rem;
+  border-radius:99px; background:linear-gradient(90deg,var(--primary),#2dd4bf);
 }
-.ck-page-header::after {display:none;}
-.ck-page-header h2 {color:var(--ink) !important; margin:0; font-size:2.65rem !important; font-weight:800;}
-.ck-page-header p {color:var(--muted) !important; margin:.65rem 0 0; font-size:1.05rem;}
+.ck-page-header {background:transparent; border:0; padding:0; margin:.1rem 0 1.7rem;}
+.ck-page-header h2 {margin:0; font-size:2.35rem !important; font-weight:760 !important;}
+.ck-page-header p {margin:.65rem 0 0; font-size:1rem; color:var(--muted) !important;}
 
-/* KPI cards */
+/* METRICS */
 [data-testid="stMetric"] {
-  min-height:158px; background:var(--card); border:1px solid var(--border);
-  border-radius:var(--radius); padding:1.55rem 1.55rem 1.4rem;
-  box-shadow:var(--shadow); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  min-height:142px; background:linear-gradient(145deg,#fff 0%,#fbfcfe 100%);
+  border:1px solid var(--border); border-radius:var(--radius); padding:1.35rem 1.4rem;
+  box-shadow:var(--shadow); transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+  position:relative; overflow:hidden;
 }
-[data-testid="stMetric"]:hover {transform:translateY(-3px); box-shadow:var(--shadow-hover); border-color:#cfd7e2;}
-[data-testid="stMetricLabel"] {font-size:.98rem; font-weight:560; color:var(--ink);}
-[data-testid="stMetricValue"] {font-size:1.85rem; line-height:1.25; font-weight:430; color:var(--ink); letter-spacing:-.025em;}
-[data-testid="stMetricDelta"] {font-size:.82rem;}
+[data-testid="stMetric"]::before {
+  content:""; position:absolute; left:0; top:0; bottom:0; width:4px;
+  background:linear-gradient(180deg,var(--primary),#2dd4bf);
+}
+[data-testid="stMetric"]:hover {transform:translateY(-3px); box-shadow:var(--shadow-hover); border-color:#cfd8e5;}
+[data-testid="stMetricLabel"] {font-size:.9rem; font-weight:620; color:var(--muted);}
+[data-testid="stMetricValue"] {font-size:1.75rem; line-height:1.25; font-weight:560; color:var(--ink); letter-spacing:-.025em;}
+[data-testid="stMetricDelta"] {font-size:.8rem; font-weight:600;}
 
-/* Tabs */
+/* TABS */
 [data-testid="stTabs"] [data-baseweb="tab-list"] {
-  gap:.35rem; padding:.34rem; background:#e8edf3; border:1px solid #dce3eb; border-radius:13px;
+  gap:.25rem; padding:.32rem; background:#eaf0f6; border:1px solid #dce4ed; border-radius:12px;
 }
 [data-testid="stTabs"] button[data-baseweb="tab"] {
-  height:44px; border-radius:9px; padding:0 1.1rem; color:#526071; font-weight:620;
+  height:43px; border-radius:9px; padding:0 1rem; color:#5c6878; font-weight:620;
 }
 [data-testid="stTabs"] button[aria-selected="true"] {
-  background:#fff; color:var(--ink); box-shadow:0 4px 12px rgba(16,24,40,.09);
+  background:#fff; color:var(--primary-dark); box-shadow:0 3px 10px rgba(22,32,51,.08);
 }
 
-/* Containers, forms and charts */
+/* CARDS, FORMS, CHARTS, TABLES */
 [data-testid="stVerticalBlockBorderWrapper"] {
-  background:var(--card); border:1px solid var(--border) !important; border-radius:var(--radius);
-  box-shadow:var(--shadow); padding:.25rem;
+  background:var(--card); border:1px solid var(--border) !important;
+  border-radius:var(--radius); box-shadow:var(--shadow); padding:.35rem;
 }
-[data-testid="stPlotlyChart"], [data-testid="stPyplotGlobalUse"] {
+[data-testid="stForm"] {
   background:#fff; border:1px solid var(--border); border-radius:var(--radius);
-  padding:.7rem; box-shadow:var(--shadow); overflow:hidden;
+  padding:1.35rem; box-shadow:var(--shadow);
+}
+[data-testid="stPlotlyChart"],[data-testid="stPyplotGlobalUse"] {
+  background:#fff; border:1px solid var(--border); border-radius:var(--radius);
+  padding:.65rem; box-shadow:var(--shadow); overflow:hidden;
 }
 [data-testid="stDataFrame"] {
-  background:#fff; border:1px solid var(--border); border-radius:14px; overflow:hidden; box-shadow:var(--shadow);
+  background:#fff; border:1px solid var(--border); border-radius:13px;
+  overflow:hidden; box-shadow:var(--shadow);
 }
 
-/* Inputs */
-[data-testid="stTextInput"] input,
-[data-testid="stNumberInput"] input,
-[data-testid="stDateInput"] input,
-[data-testid="stTextArea"] textarea,
+/* INPUTS */
+[data-testid="stTextInput"] input,[data-testid="stNumberInput"] input,
+[data-testid="stDateInput"] input,[data-testid="stTextArea"] textarea,
 [data-baseweb="select"] > div {
-  min-height:45px; background:#fff !important; border:1px solid #d5dde7 !important;
-  border-radius:10px !important; box-shadow:0 1px 2px rgba(16,24,40,.02);
+  min-height:45px; background:#fff !important; border:1px solid var(--border-strong) !important;
+  border-radius:10px !important; box-shadow:0 1px 2px rgba(22,32,51,.02);
 }
-[data-testid="stTextInput"] input:focus,
-[data-testid="stNumberInput"] input:focus,
-[data-testid="stDateInput"] input:focus,
-[data-testid="stTextArea"] textarea:focus {
-  border-color:#93a4ba !important; box-shadow:0 0 0 3px rgba(34,48,75,.10) !important;
+[data-testid="stTextInput"] input:focus,[data-testid="stNumberInput"] input:focus,
+[data-testid="stDateInput"] input:focus,[data-testid="stTextArea"] textarea:focus {
+  border-color:var(--primary) !important; box-shadow:0 0 0 3px rgba(15,118,110,.11) !important;
+}
+[data-testid="stRadio"] > label,[data-testid="stSelectbox"] > label,
+[data-testid="stTextInput"] > label,[data-testid="stNumberInput"] > label,
+[data-testid="stDateInput"] > label,[data-testid="stTextArea"] > label {
+  font-weight:620 !important; color:#455266 !important;
 }
 
-/* Buttons: clean navy, reference-like */
-.stButton > button, [data-testid="stDownloadButton"] button {
+/* BUTTONS */
+.stButton > button,[data-testid="stDownloadButton"] button {
   min-height:44px; padding:.58rem 1.05rem; border-radius:10px;
-  background:#fff; color:var(--ink); border:1px solid #cfd7e2;
-  font-weight:650; box-shadow:0 2px 5px rgba(16,24,40,.04); transition:.16s ease;
+  background:#fff; color:var(--ink); border:1px solid var(--border-strong);
+  font-weight:680; box-shadow:0 2px 5px rgba(22,32,51,.04); transition:.16s ease;
 }
-.stButton > button:hover, [data-testid="stDownloadButton"] button:hover {
-  background:var(--navy); color:#fff; border-color:var(--navy); transform:translateY(-1px);
-  box-shadow:0 8px 18px rgba(17,26,43,.18);
+.stButton > button:hover,[data-testid="stDownloadButton"] button:hover {
+  background:var(--primary-dark); color:#fff; border-color:var(--primary-dark);
+  transform:translateY(-1px); box-shadow:0 8px 18px rgba(15,118,110,.20);
 }
 .stFormSubmitButton > button {
-  background:var(--navy); color:#fff; border-color:var(--navy);
+  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+  color:#fff; border-color:var(--primary); width:auto;
 }
-.stFormSubmitButton > button:hover {background:var(--navy-2); border-color:var(--navy-2);}
+.stFormSubmitButton > button:hover {background:var(--primary-dark); border-color:var(--primary-dark);}
 
-/* Alerts */
-[data-testid="stAlert"] {border:0; border-radius:11px; box-shadow:none; padding:.85rem 1rem;}
-[data-testid="stAlert"] p {color:inherit;}
+/* ALERTS */
+[data-testid="stAlert"] {border-radius:11px; box-shadow:none; padding:.88rem 1rem; border-width:1px;}
+hr {border-color:#e1e7ef; margin:1.55rem 0;}
+.ck-section-title {font-size:1.25rem; font-weight:720; color:var(--ink); margin:.65rem 0 .9rem;}
+.ck-vehicle-title {font-size:1.25rem; font-weight:730; color:var(--ink);}
 
-/* Section headings */
-.ck-section-title {font-size:1.35rem; font-weight:750; color:var(--ink); margin:.65rem 0 .9rem; border:0; padding:0;}
-.ck-vehicle-title {font-size:1.3rem; font-weight:760; color:var(--ink);}
-hr {border-color:#e2e7ee; margin:1.55rem 0;}
-
-/* Login */
-.ck-login-brand {text-align:center; padding:.65rem .5rem 1.15rem;}
-.ck-login-logo {display:block; width:165px; max-width:58%; margin:0 auto 1.1rem; filter:drop-shadow(0 7px 15px rgba(16,24,40,.10));}
-.ck-login-title {color:var(--ink); font-size:1.9rem; font-weight:800; margin:0; letter-spacing:-.035em;}
-.ck-login-title::after {content:""; display:block; width:38px; height:4px; border-radius:5px; background:var(--accent); margin:.8rem auto 0;}
-.ck-login-subtitle {color:var(--muted); margin:.75rem 0 0;}
-.ck-login-footer {text-align:center; color:#98a2b3; font-size:.78rem; margin-top:1rem;}
-body:has(.ck-login-brand) .stApp {background:linear-gradient(135deg,#eef2f7 0%,#f8fafc 55%,#edf2f7 100%);}
+/* LOGIN */
+.ck-login-brand {text-align:center; padding:.75rem .55rem 1.25rem;}
+.ck-login-logo {display:block; width:160px; max-width:58%; margin:0 auto 1.15rem; filter:drop-shadow(0 8px 18px rgba(22,32,51,.12));}
+.ck-login-title::before {content:"CEEKAY Tours";}
+.ck-login-title {color:var(--ink); font-size:1.85rem; font-weight:780; margin:0; letter-spacing:-.03em;}
+.ck-login-title::after {content:""; display:block; width:44px; height:4px; border-radius:99px; background:linear-gradient(90deg,var(--primary),#2dd4bf); margin:.8rem auto 0;}
+.ck-login-subtitle {color:var(--muted); margin:.8rem 0 0; line-height:1.6;}
+.ck-login-footer {text-align:center; color:#98a2b3; font-size:.76rem; margin-top:1rem;}
+body:has(.ck-login-brand) .stApp {
+  background:radial-gradient(circle at 10% 10%,rgba(45,212,191,.12),transparent 28%),
+             radial-gradient(circle at 90% 90%,rgba(15,118,110,.10),transparent 30%),#f4f7fb;
+}
 body:has(.ck-login-brand) [data-testid="stVerticalBlockBorderWrapper"] {
-  border:1px solid #dfe5ec !important; box-shadow:0 24px 70px rgba(16,24,40,.14); border-radius:22px;
+  border:1px solid rgba(213,220,231,.95) !important;
+  box-shadow:0 26px 72px rgba(22,32,51,.14); border-radius:20px;
 }
 
 @media (max-width:900px) {
-  .block-container {padding:3.8rem 1rem 2.5rem;}
-  h1,.title-text,.ck-page-header h2 {font-size:2rem !important;}
-  [data-testid="stMetric"] {min-height:132px; padding:1.2rem;}
-  [data-testid="stMetricValue"] {font-size:1.45rem;}
+  .block-container {padding:4rem 1rem 2.5rem;}
+  h1,.title-text,.ck-page-header h2 {font-size:1.95rem !important;}
+  [data-testid="stMetric"] {min-height:126px; padding:1.1rem 1.15rem;}
+  [data-testid="stMetricValue"] {font-size:1.42rem;}
 }
 </style>
 """
 st.markdown(modern_css, unsafe_allow_html=True)
+
 
 # -------------------------------------------------------------------
 # ACCESSIBLE TEXT CONTRAST OVERRIDES (UI ONLY)

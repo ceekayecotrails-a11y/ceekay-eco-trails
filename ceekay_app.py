@@ -9,269 +9,50 @@ import matplotlib.pyplot as plt
 import base64
 from pathlib import Path
 
-# -------------------------------------------------------------------
-# SOFT CHARCOAL UI + PAGE CONFIG
-# -------------------------------------------------------------------
-st.set_page_config(
-    page_title="CEEKAY Tours Management System",
-    page_icon="",
-    layout="wide"
-)
+APP_TITLE = "CEEKAY Tours Manager"
+WORKBOOK_NAME = "CEEKAY_Driver_Reports"
+
+st.set_page_config(page_title=APP_TITLE, page_icon="🚗", layout="wide")
 
 st.markdown(
     """
     <style>
-    /* Perfect centering for Streamlit images (desktop + mobile) */
-    .center-logo [data-testid="stImage"] {
-        display: flex;
-        justify-content: center;
-    }
+    :root { --navy:#0f172a; --blue:#2563eb; --teal:#0f766e; --ink:#111827; }
+    .stApp {background:linear-gradient(135deg,#f7f9fc 0%,#edf3f9 100%);color:var(--ink);}
+    header[data-testid="stHeader"] {height:3.5rem;background:rgba(255,255,255,.94);}
+    .block-container {padding-top:5.4rem !important;padding-bottom:3rem;max-width:1500px;}
+    [data-testid="stSidebar"] {background:linear-gradient(180deg,#111827 0%,#0b1220 100%);}
+    [data-testid="stSidebar"] * {color:#f8fafc !important;}
+    h1,h2,h3,h4,h5,h6,.finance-title {line-height:1.25 !important;overflow:visible !important;padding-top:.12em !important;}
+    .finance-title {font-size:2.1rem;font-weight:760;color:#0f172a;margin:0 0 .2rem;}
+    .finance-subtitle {color:#64748b;margin:0 0 1.35rem;font-size:1.02rem;}
+    [data-testid="stMetric"] {background:#fff;padding:20px 18px;min-height:142px;border-radius:20px;border:1px solid #e2e8f0;box-shadow:0 10px 28px rgba(15,23,42,.06);overflow:visible !important;min-width:0;}
+    [data-testid="stMetricLabel"] {font-size:.95rem;}
+    [data-testid="stMetricValue"], [data-testid="stMetricValue"] > div {font-size:clamp(1.05rem,1.55vw,1.65rem) !important;line-height:1.28 !important;white-space:nowrap !important;overflow:visible !important;text-overflow:clip !important;word-break:normal !important;max-width:none !important;width:auto !important;}
+    div[data-testid="stForm"] {background:rgba(255,255,255,.98);padding:24px;border-radius:20px;border:1px solid #e2e8f0;box-shadow:0 10px 30px rgba(15,23,42,.05);}
+    .section-card {background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:20px;margin-bottom:16px;box-shadow:0 8px 24px rgba(15,23,42,.05)}
+    .small-note {font-size:.85rem;color:#64748b;}
+    div.stButton > button, div[data-testid="stFormSubmitButton"] button {border-radius:12px;min-height:44px;font-weight:650;}
+    div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, textarea {border-radius:12px !important;}
+    .login-logo {width:86px;height:86px;border-radius:24px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:2.25rem;background:linear-gradient(135deg,#2563eb,#0f766e);}
+    .login-name {font-size:2rem;font-weight:780;line-height:1.25;color:#0f172a;}
+    .login-sub {color:#64748b;margin:.35rem 0 1.1rem;}
+    .login-note {background:#f1f5f9;border-radius:13px;padding:12px;color:#475569;font-size:.88rem;}
+    @media(max-width:900px){.block-container{padding-top:4.8rem !important;}[data-testid="stMetric"]{min-height:120px;padding:16px;}[data-testid="stMetricValue"]{font-size:1.35rem !important;}}
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
-
-
-# -------------------------------------------------------------------
-# MODERN CEEKAY SOFT CHARCOAL UI THEME
-# -------------------------------------------------------------------
-modern_css = r"""
-<style>
-:root {
-  --primary:#0f766e;
-  --primary-dark:#115e59;
-  --primary-soft:#ecfdf8;
-  --sidebar:#0b1726;
-  --sidebar-2:#10243a;
-  --ink:#172033;
-  --muted:#6b7688;
-  --canvas:#f4f7fb;
-  --card:#ffffff;
-  --border:#e4e9f1;
-  --border-strong:#d5dce7;
-  --success:#0f9f6e;
-  --warning:#d97706;
-  --danger:#dc3545;
-  --shadow:0 8px 26px rgba(22,32,51,.06);
-  --shadow-hover:0 14px 34px rgba(22,32,51,.10);
-  --radius:16px;
-}
-
-#MainMenu, footer {visibility:hidden;}
-header[data-testid="stHeader"] {
-  background:rgba(255,255,255,.92);
-  border-bottom:1px solid var(--border);
-  backdrop-filter:blur(14px);
-}
-[data-testid="stToolbar"] {right:1rem;}
-html, body, [class*="css"] {font-family:Inter,"Segoe UI",Arial,sans-serif;}
-.stApp {background:var(--canvas); color:var(--ink);}
-.block-container {max-width:1480px; padding:4.7rem 2.6rem 3.5rem;}
-
-/* SIDEBAR */
-[data-testid="stSidebar"] {
-  background:linear-gradient(180deg,var(--sidebar) 0%,var(--sidebar-2) 100%);
-  border-right:1px solid rgba(255,255,255,.05);
-  box-shadow:12px 0 34px rgba(10,23,38,.12);
-}
-[data-testid="stSidebar"] > div:first-child {padding:1.15rem .8rem 1.5rem;}
-[data-testid="stSidebar"] [data-testid="stImage"] {margin:.15rem auto .3rem;}
-[data-testid="stSidebar"] [data-testid="stImage"] img {
-  max-height:100px; object-fit:contain; filter:drop-shadow(0 7px 16px rgba(0,0,0,.20));
-}
-[data-testid="stSidebar"] hr {margin:1rem .2rem; border-color:rgba(255,255,255,.10);}
-[data-testid="stSidebar"] [role="radiogroup"] {gap:.18rem;}
-[data-testid="stSidebar"] [role="radiogroup"] label {
-  min-height:46px; padding:.68rem .78rem; margin:.03rem 0; border-radius:11px;
-  border:1px solid transparent; transition:.17s ease;
-}
-[data-testid="stSidebar"] [role="radiogroup"] label:hover {
-  background:rgba(255,255,255,.07); transform:translateX(2px);
-}
-[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {
-  background:linear-gradient(90deg,rgba(15,118,110,.34),rgba(15,118,110,.14));
-  border-color:rgba(94,234,212,.18); box-shadow:inset 3px 0 0 #2dd4bf;
-}
-[data-testid="stSidebar"] [role="radiogroup"] label p {font-size:.94rem; font-weight:560;}
-[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) p {font-weight:720;}
-[data-testid="stSidebar"] [role="radio"] {display:none;}
-
-/* TYPOGRAPHY */
-h1 {font-size:2.35rem !important; line-height:1.1; font-weight:760 !important; letter-spacing:-.035em;}
-h2 {font-size:1.85rem !important; line-height:1.16; font-weight:740 !important; letter-spacing:-.027em;}
-h3 {font-size:1.25rem !important; font-weight:700 !important; letter-spacing:-.015em;}
-h1,h2,h3,h4 {color:var(--ink);}
-p,label,.stCaption {color:var(--muted);}
-.title-text {
-  font-size:2.25rem; line-height:1.1; font-weight:760; letter-spacing:-.035em;
-  color:var(--ink); margin:.05rem 0 1.55rem;
-}
-.title-text::after,.ck-page-header h2::after {
-  content:""; display:block; width:46px; height:4px; margin-top:.75rem;
-  border-radius:99px; background:linear-gradient(90deg,var(--primary),#2dd4bf);
-}
-.ck-page-header {background:transparent; border:0; padding:0; margin:.1rem 0 1.7rem;}
-.ck-page-header h2 {margin:0; font-size:2.35rem !important; font-weight:760 !important;}
-.ck-page-header p {margin:.65rem 0 0; font-size:1rem; color:var(--muted) !important;}
-
-/* METRICS */
-[data-testid="stMetric"] {
-  min-height:142px; background:linear-gradient(145deg,#fff 0%,#fbfcfe 100%);
-  border:1px solid var(--border); border-radius:var(--radius); padding:1.35rem 1.4rem;
-  box-shadow:var(--shadow); transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
-  position:relative; overflow:hidden;
-}
-[data-testid="stMetric"]::before {
-  content:""; position:absolute; left:0; top:0; bottom:0; width:4px;
-  background:linear-gradient(180deg,var(--primary),#2dd4bf);
-}
-[data-testid="stMetric"]:hover {transform:translateY(-3px); box-shadow:var(--shadow-hover); border-color:#cfd8e5;}
-[data-testid="stMetricLabel"] {font-size:.9rem; font-weight:620; color:var(--muted);}
-[data-testid="stMetricValue"] {font-size:1.75rem; line-height:1.25; font-weight:560; color:var(--ink); letter-spacing:-.025em;}
-[data-testid="stMetricDelta"] {font-size:.8rem; font-weight:600;}
-
-/* TABS */
-[data-testid="stTabs"] [data-baseweb="tab-list"] {
-  gap:.25rem; padding:.32rem; background:#eaf0f6; border:1px solid #dce4ed; border-radius:12px;
-}
-[data-testid="stTabs"] button[data-baseweb="tab"] {
-  height:43px; border-radius:9px; padding:0 1rem; color:#5c6878; font-weight:620;
-}
-[data-testid="stTabs"] button[aria-selected="true"] {
-  background:#fff; color:var(--primary-dark); box-shadow:0 3px 10px rgba(22,32,51,.08);
-}
-
-/* CARDS, FORMS, CHARTS, TABLES */
-[data-testid="stVerticalBlockBorderWrapper"] {
-  background:var(--card); border:1px solid var(--border) !important;
-  border-radius:var(--radius); box-shadow:var(--shadow); padding:.35rem;
-}
-[data-testid="stForm"] {
-  background:#fff; border:1px solid var(--border); border-radius:var(--radius);
-  padding:1.35rem; box-shadow:var(--shadow);
-}
-[data-testid="stPlotlyChart"],[data-testid="stPyplotGlobalUse"] {
-  background:#fff; border:1px solid var(--border); border-radius:var(--radius);
-  padding:.65rem; box-shadow:var(--shadow); overflow:hidden;
-}
-[data-testid="stDataFrame"] {
-  background:#fff; border:1px solid var(--border); border-radius:13px;
-  overflow:hidden; box-shadow:var(--shadow);
-}
-
-/* INPUTS */
-[data-testid="stTextInput"] input,[data-testid="stNumberInput"] input,
-[data-testid="stDateInput"] input,[data-testid="stTextArea"] textarea,
-[data-baseweb="select"] > div {
-  min-height:45px; background:#fff !important; border:1px solid var(--border-strong) !important;
-  border-radius:10px !important; box-shadow:0 1px 2px rgba(22,32,51,.02);
-}
-[data-testid="stTextInput"] input:focus,[data-testid="stNumberInput"] input:focus,
-[data-testid="stDateInput"] input:focus,[data-testid="stTextArea"] textarea:focus {
-  border-color:var(--primary) !important; box-shadow:0 0 0 3px rgba(15,118,110,.11) !important;
-}
-[data-testid="stRadio"] > label,[data-testid="stSelectbox"] > label,
-[data-testid="stTextInput"] > label,[data-testid="stNumberInput"] > label,
-[data-testid="stDateInput"] > label,[data-testid="stTextArea"] > label {
-  font-weight:620 !important; color:#455266 !important;
-}
-
-/* BUTTONS */
-.stButton > button,[data-testid="stDownloadButton"] button {
-  min-height:44px; padding:.58rem 1.05rem; border-radius:10px;
-  background:#fff; color:var(--ink); border:1px solid var(--border-strong);
-  font-weight:680; box-shadow:0 2px 5px rgba(22,32,51,.04); transition:.16s ease;
-}
-.stButton > button:hover,[data-testid="stDownloadButton"] button:hover {
-  background:var(--primary-dark); color:#fff; border-color:var(--primary-dark);
-  transform:translateY(-1px); box-shadow:0 8px 18px rgba(15,118,110,.20);
-}
-.stFormSubmitButton > button {
-  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
-  color:#fff; border-color:var(--primary); width:auto;
-}
-.stFormSubmitButton > button:hover {background:var(--primary-dark); border-color:var(--primary-dark);}
-
-/* ALERTS */
-[data-testid="stAlert"] {border-radius:11px; box-shadow:none; padding:.88rem 1rem; border-width:1px;}
-hr {border-color:#e1e7ef; margin:1.55rem 0;}
-.ck-section-title {font-size:1.25rem; font-weight:720; color:var(--ink); margin:.65rem 0 .9rem;}
-.ck-vehicle-title {font-size:1.25rem; font-weight:730; color:var(--ink);}
-
-/* LOGIN */
-.ck-login-brand {text-align:center; padding:.75rem .55rem 1.25rem;}
-.ck-login-logo {display:block; width:160px; max-width:58%; margin:0 auto 1.15rem; filter:drop-shadow(0 8px 18px rgba(22,32,51,.12));}
-.ck-login-title::before {content:"CEEKAY Tours";}
-.ck-login-title {color:var(--ink); font-size:1.85rem; font-weight:780; margin:0; letter-spacing:-.03em;}
-.ck-login-title::after {content:""; display:block; width:44px; height:4px; border-radius:99px; background:linear-gradient(90deg,var(--primary),#2dd4bf); margin:.8rem auto 0;}
-.ck-login-subtitle {color:var(--muted); margin:.8rem 0 0; line-height:1.6;}
-.ck-login-footer {text-align:center; color:#98a2b3; font-size:.76rem; margin-top:1rem;}
-body:has(.ck-login-brand) .stApp {
-  background:radial-gradient(circle at 10% 10%,rgba(45,212,191,.12),transparent 28%),
-             radial-gradient(circle at 90% 90%,rgba(15,118,110,.10),transparent 30%),#f4f7fb;
-}
-body:has(.ck-login-brand) [data-testid="stVerticalBlockBorderWrapper"] {
-  border:1px solid rgba(213,220,231,.95) !important;
-  box-shadow:0 26px 72px rgba(22,32,51,.14); border-radius:20px;
-}
-
-@media (max-width:900px) {
-  .block-container {padding:4rem 1rem 2.5rem;}
-  h1,.title-text,.ck-page-header h2 {font-size:1.95rem !important;}
-  [data-testid="stMetric"] {min-height:126px; padding:1.1rem 1.15rem;}
-  [data-testid="stMetricValue"] {font-size:1.42rem;}
-}
-</style>
-"""
-st.markdown(modern_css, unsafe_allow_html=True)
-
-
-# -------------------------------------------------------------------
-# ACCESSIBLE TEXT CONTRAST OVERRIDES (UI ONLY)
-# -------------------------------------------------------------------
-text_contrast_css = """
-<style>
-/* Main light area */
-[data-testid="stAppViewContainer"] .main, [data-testid="stAppViewContainer"] .main * {color:var(--ink);}
-[data-testid="stAppViewContainer"] .main p, [data-testid="stAppViewContainer"] .main .stCaption {color:var(--muted);}
-
-/* Sidebar */
-[data-testid="stSidebar"], [data-testid="stSidebar"] * {color:#f8fafc !important;}
-[data-testid="stSidebar"] input, [data-testid="stSidebar"] textarea,
-[data-testid="stSidebar"] [data-baseweb="select"] * {color:var(--ink) !important;}
-
-/* Inputs and dropdown values */
-input, textarea, [data-baseweb="select"] *, [data-baseweb="select"] svg {color:var(--ink) !important; fill:var(--ink) !important;}
-input::placeholder, textarea::placeholder {color:#98a2b3 !important; opacity:1;}
-body [data-baseweb="popover"], body [data-baseweb="menu"], body [role="listbox"] {
-  background:#fff !important; color:var(--ink) !important; border:1px solid #dfe5ec !important;
-  border-radius:10px !important; box-shadow:0 16px 36px rgba(16,24,40,.14) !important;
-}
-body [role="option"], body [role="option"] *, body [data-baseweb="menu"] li, body [data-baseweb="menu"] li * {
-  color:var(--ink) !important; background:#fff !important;
-}
-body [role="option"]:hover, body [role="option"][aria-selected="true"],
-body [role="option"]:hover *, body [role="option"][aria-selected="true"] * {
-  color:var(--ink) !important; background:#eef2f6 !important;
-}
-[data-baseweb="tag"], [data-baseweb="tag"] * {background:#e9eef5 !important; color:var(--ink) !important; fill:var(--ink) !important;}
-
-/* Intentional dark surfaces */
-.stFormSubmitButton > button, .stFormSubmitButton > button *,
-.stButton > button:hover, .stButton > button:hover *,
-[data-testid="stDownloadButton"] button:hover, [data-testid="stDownloadButton"] button:hover * {color:#fff !important;}
-
-/* Metrics and tabs */
-[data-testid="stMetricLabel"] *, [data-testid="stMetricValue"] *, [data-testid="stMetricDelta"] * {color:var(--ink) !important;}
-[data-testid="stTabs"] button[aria-selected="true"], [data-testid="stTabs"] button[aria-selected="true"] * {color:var(--ink) !important;}
-[data-testid="stTabs"] button:not([aria-selected="true"]), [data-testid="stTabs"] button:not([aria-selected="true"]) * {color:#526071 !important;}
-
-/* Alerts retain native semantic text */
-[data-testid="stAlert"] * {color:inherit !important;}
-</style>
-"""
-st.markdown(text_contrast_css, unsafe_allow_html=True)
+# Tours-specific UI extensions
+st.markdown("""<style>
+.ck-page-kicker{display:inline-block;background:#ecfdf5;color:#0f766e!important;border:1px solid #ccfbf1;border-radius:999px;padding:.34rem .68rem;font-size:.76rem;font-weight:700;margin-bottom:.7rem;}
+.ck-side-brand{text-align:center;margin:.2rem 0 .9rem}.ck-side-brand b{color:#fff!important}.ck-side-brand span{display:block;color:#94a3b8!important;font-size:.75rem;margin-top:.15rem}
+[data-testid="stSidebar"] [role="radio"]{display:none;}
+[data-testid="stSidebar"] [role="radiogroup"] label{padding:.62rem .7rem;border-radius:11px;}
+[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked){background:rgba(15,118,110,.35);}
+.ck-login-note{background:#f1f5f9;border-radius:13px;padding:12px;color:#475569!important;font-size:.88rem;margin-top:.7rem;}
+</style>""",unsafe_allow_html=True)
 
 # -------------------------------------------------------------------
 # GOOGLE SHEET CONNECTION (SAFE VERSION)
@@ -332,27 +113,16 @@ def driver_auth(username, password):
 # SIDEBAR MENU
 # -------------------------------------------------------------------
 def sidebar_menu(user_type=None):
-
     with st.sidebar:
-        st.markdown("<div class='center-logo'>", unsafe_allow_html=True)
-        st.image("logo.png", width=150)
-        st.markdown("</div>", unsafe_allow_html=True)
-        st.markdown("---")
-
-    icons = {
-        "Dashboard": "📊",
-        "Daily Entry": "📝",
-        "Profit Reports": "📈",
-        "Vehicle Entry": "🛠",
-        "Vehicle Report": "🚗",
-        "Logout": "🚪"
-    }
-
-    return st.sidebar.radio(
-        "",
-        ["Dashboard", "Daily Entry", "Profit Reports", "Vehicle Entry", "Vehicle Report", "Logout"],
-        format_func=lambda x: f"{icons[x]} {x}"
-    )
+        if Path("logo.png").exists():
+            st.image("logo.png", width=130)
+        st.markdown('<div class="ck-side-brand"><b>CEEKAY TOURS</b><span>Management Console</span></div>', unsafe_allow_html=True)
+        st.divider()
+        icons={"Dashboard":"▦","Daily Entry":"＋","Profit Reports":"↗","Vehicle Entry":"⚙","Vehicle Report":"◉","Logout":"↪"}
+        page=st.radio("Navigation",["Dashboard","Daily Entry","Profit Reports","Vehicle Entry","Vehicle Report","Logout"],format_func=lambda x:f"{icons[x]}   {x}",label_visibility="collapsed")
+        st.divider()
+        st.caption("CEEKAY Tours • Admin Workspace")
+        return page
 
 def get_last_end_mileage(driver_name):
     df = pd.DataFrame(daily_sheet.get_all_records())
@@ -2399,96 +2169,41 @@ def page_admin_daily_entry():
 if "is_admin_logged" not in st.session_state:
     st.session_state.is_admin_logged = False
 
-
-# =====================================================
-# SINGLE ADMIN LOGIN
-# =====================================================
 if not st.session_state.is_admin_logged:
-
-    login_left, login_center, login_right = st.columns([1, 1.15, 1])
-
-    with login_center:
+    left, center, right = st.columns([1, 1.05, 1])
+    with center:
         with st.container(border=True):
-            logo_html = ""
-            logo_path = Path("logo.png")
-
-            if logo_path.exists():
-                logo_base64 = base64.b64encode(
-                    logo_path.read_bytes()
-                ).decode("utf-8")
-                logo_html = (
-                    f'<img class="ck-login-logo" '
-                    f'src="data:image/png;base64,{logo_base64}" '
-                    f'alt="CEEKAY Tours logo">'
-                )
-
-            st.markdown(
-                f"""
-                <div class="ck-login-brand">
-                    {logo_html}
-                    <div class="ck-login-title"></div>
-                    <div class="ck-login-subtitle">
-                        Management System<br>
-                        Administrator Access
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            username = st.text_input(
-                "Username",
-                key="admin_login_username",
-                placeholder="Enter username"
-            )
-
-            password = st.text_input(
-                "Password",
-                type="password",
-                key="admin_login_password",
-                placeholder="Enter password"
-            )
-
-            if st.button(
-                "Login",
-                use_container_width=True,
-                key="admin_login_button"
-            ):
-                if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-                    st.session_state.is_admin_logged = True
+            if Path("logo.png").exists():
+                st.image("logo.png", width=120)
+            else:
+                st.markdown('<div class="login-logo">CT</div>', unsafe_allow_html=True)
+            st.markdown('<div class="login-name" style="text-align:center">CEEKAY Tours</div><div class="login-sub" style="text-align:center">Business Management Console<br>Administrator Access</div>', unsafe_allow_html=True)
+            username=st.text_input("Username",placeholder="Enter username",key="admin_login_username")
+            password=st.text_input("Password",type="password",placeholder="Enter password",key="admin_login_password")
+            if st.button("Sign in",use_container_width=True,key="admin_login_button"):
+                if username==ADMIN_USERNAME and password==ADMIN_PASSWORD:
+                    st.session_state.is_admin_logged=True
                     st.rerun()
                 else:
-                    st.error("Incorrect username or password!")
-
-            st.markdown(
-                '<div class="ck-login-footer">© 2026 CEEKAY Tours</div>',
-                unsafe_allow_html=True
-            )
-
-
-# =====================================================
-# ADMIN SYSTEM
-# =====================================================
+                    st.error("Incorrect username or password.")
+            st.markdown('<div class="ck-login-note">Single administrator account • Existing CEEKAY Tours database</div>',unsafe_allow_html=True)
 else:
-
-    page = sidebar_menu()
-
-    if page == "Dashboard":
-        page_admin_dashboard()
-
-    elif page == "Daily Entry":
-        page_admin_daily_entry()
-
-    elif page == "Profit Reports":
-        page_profit_reports()
-
-    elif page == "Vehicle Entry":
-        page_vehicle_entry()
-
-    elif page == "Vehicle Report":
-        page_vehicle_report()
-
-    elif page == "Logout":
-        st.session_state.is_admin_logged = False
+    page=sidebar_menu()
+    meta={
+      "Dashboard":("Business Dashboard","Revenue, profitability, mileage and fleet health at a glance."),
+      "Daily Entry":("Daily Operations","Record driver and trip income directly from the admin workspace."),
+      "Profit Reports":("Profit Reports","Review daily, date-range and monthly business performance."),
+      "Vehicle Entry":("Vehicle Costs & Service","Maintain vehicle master data, running costs and service expenses."),
+      "Vehicle Report":("Vehicle Report","Review vehicle-level income, expenses, mileage and profitability.")
+    }
+    if page!="Logout":
+        title,sub=meta[page]
+        st.markdown(f'<div class="ck-page-kicker">CEEKAY TOURS • MANAGEMENT</div><div class="finance-title">{title}</div><div class="finance-subtitle">{sub}</div>',unsafe_allow_html=True)
+    if page=="Dashboard": page_admin_dashboard()
+    elif page=="Daily Entry": page_admin_daily_entry()
+    elif page=="Profit Reports": page_profit_reports()
+    elif page=="Vehicle Entry": page_vehicle_entry()
+    elif page=="Vehicle Report": page_vehicle_report()
+    elif page=="Logout":
+        st.session_state.clear()
         st.rerun()
-

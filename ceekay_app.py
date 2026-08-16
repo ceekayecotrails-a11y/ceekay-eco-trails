@@ -316,6 +316,7 @@ def check_driver_status(driver_name):
 # -------------------------------------------------------------------
 # LOGIN SYSTEM
 # -------------------------------------------------------------------
+ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "Mypa$$CEEKAY"
 
 def driver_auth(username, password):
@@ -330,7 +331,7 @@ def driver_auth(username, password):
 # -------------------------------------------------------------------
 # SIDEBAR MENU
 # -------------------------------------------------------------------
-def sidebar_menu(user_type):
+def sidebar_menu(user_type=None):
 
     with st.sidebar:
         st.markdown("<div class='center-logo'>", unsafe_allow_html=True)
@@ -339,32 +340,19 @@ def sidebar_menu(user_type):
         st.markdown("---")
 
     icons = {
-        "Home": "🏠",
-        "Daily Report": "📝",
-        "Earnings Report": "📊",
         "Dashboard": "📊",
+        "Daily Entry": "📝",
         "Profit Reports": "📈",
-        "Submissions": "📁",
         "Vehicle Entry": "🛠",
         "Vehicle Report": "🚗",
         "Logout": "🚪"
     }
 
-    # DRIVER MENU
-    if user_type == "driver":
-        return st.sidebar.radio(
-            "",
-            ["Dashboard", "Daily Report", "Earnings Report", "Logout"],
-            format_func=lambda x: f"{icons[x]} {x}"
-        )
-
-    # ADMIN MENU
-    if user_type == "admin":
-        return st.sidebar.radio(
-            "",
-            ["Dashboard", "Profit Reports", "Vehicle Entry", "Vehicle Report", "Submissions", "Logout"],
-            format_func=lambda x: f"{icons[x]} {x}"
-        )
+    return st.sidebar.radio(
+        "",
+        ["Dashboard", "Daily Entry", "Profit Reports", "Vehicle Entry", "Vehicle Report", "Logout"],
+        format_func=lambda x: f"{icons[x]} {x}"
+    )
 
 def get_last_end_mileage(driver_name):
     df = pd.DataFrame(daily_sheet.get_all_records())
@@ -1826,8 +1814,8 @@ def page_admin_range_profit():
 
     total_fare = df_range["fare"].sum()
     total_salary = (
-        df_day["driver_salary"].sum()
-        + df_day["tip"].sum()
+        df_range["driver_salary"].sum()
+        + df_range["tip"].sum()
     )
     platform_fee = df_range["platform_fee"].sum()
     total_daily_mileage = df_range["daily_mileage"].sum()
@@ -2252,19 +2240,170 @@ def page_admin_submissions():
         st.rerun()
 
 # -------------------------------------------------------------------
-# MAIN APP
+# ADMIN DAILY ENTRY — DIRECT ENTRY, NO DRIVER LOGIN / APPROVAL REQUIRED
 # -------------------------------------------------------------------
+def page_admin_daily_entry():
+
+    st.markdown(
+        """
+        <div class="ck-page-header">
+            <h2>Daily Entry</h2>
+            <p>Add a driver's daily trip record directly from the admin account.</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    drivers_current = pd.DataFrame(drivers_sheet.get_all_records())
+
+    if drivers_current.empty or "driver_name" not in drivers_current.columns:
+        st.warning("No drivers are available in the drivers sheet.")
+        return
+
+    drivers_current = drivers_current.copy()
+    drivers_current["driver_name"] = drivers_current["driver_name"].astype(str).str.strip()
+    drivers_current = drivers_current[drivers_current["driver_name"] != ""]
+
+    if drivers_current.empty:
+        st.warning("No valid drivers are available in the drivers sheet.")
+        return
+
+    driver_names = drivers_current["driver_name"].tolist()
+    selected_driver_name = st.selectbox("Driver", driver_names)
+    selected_driver = drivers_current[
+        drivers_current["driver_name"] == selected_driver_name
+    ].iloc[0].to_dict()
+
+    vehicle_no = str(selected_driver.get("vehicle_no", "")).strip()
+    st.caption(f"Assigned Vehicle: {vehicle_no or 'Not assigned'}")
+
+    last_end_mileage = get_last_end_mileage(selected_driver_name)
+
+    with st.form("admin_daily_entry_form", clear_on_submit=True):
+        report_date = st.date_input("Select Date", value=date.today())
+
+        c1, c2 = st.columns(2)
+        start_mileage = c1.number_input(
+            "Start Mileage *",
+            min_value=0.0,
+            value=float(last_end_mileage),
+            step=1.0
+        )
+        end_mileage = c2.number_input(
+            "End Mileage *",
+            min_value=0.0,
+            value=float(last_end_mileage),
+            step=1.0
+        )
+
+        uber_hire_mileage = st.number_input(
+            "Uber Hire Mileage *",
+            min_value=0.0,
+            value=0.0,
+            step=0.01
+        )
+
+        c3, c4 = st.columns(2)
+        fare = c3.number_input("Fare (Rs.) *", min_value=0.0, value=0.0, step=100.0)
+        cash_collected = c4.number_input("Cash Collected (Rs.) *", min_value=0.0, value=0.0, step=100.0)
+
+        c5, c6, c7 = st.columns(3)
+        tip = c5.number_input("Tip (Rs.)", min_value=0.0, value=0.0, step=50.0)
+        toll_fee = c6.number_input("Toll Fee (Rs.)", min_value=0.0, value=0.0, step=50.0)
+        other_expenses = c7.number_input("Other Expenses (Rs.)", min_value=0.0, value=0.0, step=50.0)
+
+        c8, c9 = st.columns(2)
+        platform_fee = c8.number_input("Platform Fee (Rs.)", min_value=0.0, value=0.0, step=50.0)
+        bank_deposit = c9.number_input("Bank Deposit (Rs.)", min_value=0.0, value=0.0, step=50.0)
+
+        admin_note = st.text_input("Note")
+
+        submitted = st.form_submit_button("Save Daily Entry", use_container_width=True)
+
+    if not submitted:
+        return
+
+    if end_mileage < start_mileage:
+        st.error("End mileage cannot be lower than start mileage.")
+        return
+
+    daily_mileage = max(0, end_mileage - start_mileage)
+    loss_mileage = daily_mileage - uber_hire_mileage
+    net_fare = max(0, fare - toll_fee)
+    driver_salary = net_fare * 0.30
+    total_driver_salary = driver_salary + toll_fee + tip
+    amount_to_ceekay = cash_collected - total_driver_salary
+
+    master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
+    cost_per_km = 0.0
+
+    if not master_df.empty and "vehicle_no" in master_df.columns:
+        master_df = master_df.copy()
+        master_df["vehicle_no_clean"] = (
+            master_df["vehicle_no"]
+            .astype(str)
+            .str.replace("-", "", regex=False)
+            .str.replace(" ", "", regex=False)
+            .str.upper()
+            .str.strip()
+        )
+        selected_vehicle_clean = (
+            vehicle_no.replace("-", "").replace(" ", "").upper().strip()
+        )
+        vehicle_row = master_df[master_df["vehicle_no_clean"] == selected_vehicle_clean]
+        if not vehicle_row.empty:
+            cost_per_km = num(vehicle_row.iloc[0].get("cost_per_km", 0))
+
+    vehicle_running_cost = daily_mileage * cost_per_km
+
+    new_row = [
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        report_date.strftime("%Y-%m-%d"),
+        selected_driver_name,
+        vehicle_no,
+        start_mileage,
+        end_mileage,
+        daily_mileage,
+        uber_hire_mileage,
+        loss_mileage,
+        fare,
+        tip,
+        toll_fee,
+        other_expenses,
+        cash_collected,
+        0,
+        driver_salary,
+        total_driver_salary,
+        amount_to_ceekay,
+        "Correct",
+        admin_note,
+        "",
+        platform_fee,
+        bank_deposit,
+        cost_per_km,
+        vehicle_running_cost
+    ]
+
+    daily_sheet.append_row(new_row)
+
+    st.success(
+        f"Daily entry saved successfully. Driver Salary: Rs. {driver_salary:,.2f} | "
+        f"Amount to CEEKAY: Rs. {amount_to_ceekay:,.2f}"
+    )
+    st.rerun()
+
+
 # -------------------------------------------------------------------
-# MAIN APP
+# MAIN APP — SINGLE ADMIN ACCOUNT
 # -------------------------------------------------------------------
-if "page" not in st.session_state:
-    st.session_state.page = None
+if "is_admin_logged" not in st.session_state:
+    st.session_state.is_admin_logged = False
 
 
 # =====================================================
-# LOGIN SCREEN — DISPLAY ONLY WHEN LOGGED OUT
+# SINGLE ADMIN LOGIN
 # =====================================================
-if st.session_state.page is None:
+if not st.session_state.is_admin_logged:
 
     login_left, login_center, login_right = st.columns([1, 1.15, 1])
 
@@ -2290,72 +2429,36 @@ if st.session_state.page is None:
                     <div class="ck-login-title"></div>
                     <div class="ck-login-subtitle">
                         Management System<br>
-                        Secure access for drivers and administrators
+                        Administrator Access
                     </div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
-            menu = st.selectbox(
-                "Login Type",
-                ["Driver", "Admin"],
-                key="login_type"
+            username = st.text_input(
+                "Username",
+                key="admin_login_username",
+                placeholder="Enter username"
             )
 
-            # DRIVER LOGIN
-            if menu == "Driver":
+            password = st.text_input(
+                "Password",
+                type="password",
+                key="admin_login_password",
+                placeholder="Enter password"
+            )
 
-                username = st.text_input(
-                    "Driver Username",
-                    key="driver_login_username",
-                    placeholder="Enter your username"
-                )
-
-                password = st.text_input(
-                    "Password",
-                    type="password",
-                    key="driver_login_password",
-                    placeholder="Enter your password"
-                )
-
-                if st.button(
-                    "Login as Driver",
-                    use_container_width=True,
-                    key="driver_login_button"
-                ):
-                    d = driver_auth(username, password)
-
-                    if d:
-                        status = check_driver_status(d["driver_name"])
-                        st.session_state.driver_status = status
-                        st.session_state.page = "driver"
-                        st.session_state.driver = d
-                        st.rerun()
-                    else:
-                        st.error("Invalid Username or Password!")
-
-            # ADMIN LOGIN
-            else:
-
-                pw = st.text_input(
-                    "Admin Password",
-                    type="password",
-                    key="admin_login_password",
-                    placeholder="Enter the admin password"
-                )
-
-                if st.button(
-                    "Login as Admin",
-                    use_container_width=True,
-                    key="admin_login_button"
-                ):
-                    if pw == ADMIN_PASSWORD:
-                        st.session_state.page = "admin"
-                        st.session_state.is_admin_logged = True
-                        st.rerun()
-                    else:
-                        st.error("Incorrect Password!")
+            if st.button(
+                "Login",
+                use_container_width=True,
+                key="admin_login_button"
+            ):
+                if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+                    st.session_state.is_admin_logged = True
+                    st.rerun()
+                else:
+                    st.error("Incorrect username or password!")
 
             st.markdown(
                 '<div class="ck-login-footer">© 2026 CEEKAY Tours</div>',
@@ -2364,70 +2467,17 @@ if st.session_state.page is None:
 
 
 # =====================================================
-# DRIVER PAGES
+# ADMIN SYSTEM
 # =====================================================
-elif st.session_state.page == "driver":
+else:
 
-    driver = st.session_state["driver"]
-    status = st.session_state.get("driver_status", "No Reports")
-
-    if status == "Incorrect":
-        st.error(
-            "There is an issue with your previous payment. "
-            "Please contact CEEKAY Tours soon!"
-        )
-        st.stop()
-
-    page = sidebar_menu("driver")
-
-    if status == "Pending":
-        st.warning("Your last report is still under review.")
-        st.info(
-            "You can view reports, but cannot submit a new one "
-            "until it is confirmed."
-        )
-
-        if page == "Dashboard":
-            page_driver_dashboard(driver)
-
-        elif page == "Daily Report":
-            st.error(
-                "You cannot submit a new report until admin "
-                "confirms your last report."
-            )
-
-        elif page == "Earnings Report":
-            page_earnings_report("driver", driver)
-
-    elif status == "Correct" or status == "No Reports":
-
-        st.success("Have a good day. The vehicle is ready for today.")
-
-        if page == "Dashboard":
-            page_driver_dashboard(driver)
-
-        elif page == "Daily Report":
-            page_driver_form(driver)
-
-        elif page == "Earnings Report":
-            page_earnings_report("driver", driver)
-
-    if page == "Logout":
-        st.session_state.page = None
-        st.session_state.driver = None
-        st.session_state.driver_status = None
-        st.rerun()
-
-
-# =====================================================
-# ADMIN PAGES
-# =====================================================
-elif st.session_state.page == "admin":
-
-    page = sidebar_menu("admin")
+    page = sidebar_menu()
 
     if page == "Dashboard":
         page_admin_dashboard()
+
+    elif page == "Daily Entry":
+        page_admin_daily_entry()
 
     elif page == "Profit Reports":
         page_profit_reports()
@@ -2438,10 +2488,7 @@ elif st.session_state.page == "admin":
     elif page == "Vehicle Report":
         page_vehicle_report()
 
-    elif page == "Submissions":
-        page_admin_submissions()
-
     elif page == "Logout":
-        st.session_state.page = None
         st.session_state.is_admin_logged = False
         st.rerun()
+

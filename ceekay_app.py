@@ -2011,11 +2011,19 @@ def page_monthly_cash_flow():
         reports["driver_payable"] = salary + toll + tip
 
     reports["month"] = reports["date"].dt.strftime("%Y-%m")
+    platform_fee = pd.to_numeric(reports.get("platform_fee", 0), errors="coerce").fillna(0)
+    reports["platform_fee_cash"] = platform_fee
+
     monthly = reports.groupby("month", as_index=False).agg(
         monthly_revenue=("fare", "sum"),
         driver_payable=("driver_payable", "sum"),
+        platform_fee=("platform_fee_cash", "sum"),
     )
-    monthly["cash_before_electricity"] = monthly["monthly_revenue"] - monthly["driver_payable"]
+    monthly["cash_before_electricity"] = (
+        monthly["monthly_revenue"]
+        - monthly["driver_payable"]
+        - monthly["platform_fee"]
+    )
 
     elec = pd.DataFrame(monthly_cash_flow_sheet.get_all_records())
     if elec.empty:
@@ -2067,11 +2075,12 @@ def page_monthly_cash_flow():
 
     st.markdown("---")
     latest = monthly.iloc[-1]
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("Monthly Revenue", f"Rs. {latest['monthly_revenue']:,.2f}")
     c2.metric("Driver Payable", f"Rs. {latest['driver_payable']:,.2f}")
-    c3.metric("Electricity Bill", f"Rs. {latest['electricity_bill']:,.2f}")
-    c4.metric("Real Cash Flow", f"Rs. {latest['real_cash_flow']:,.2f}")
+    c3.metric("Platform Fee", f"Rs. {latest['platform_fee']:,.2f}")
+    c4.metric("Electricity Bill", f"Rs. {latest['electricity_bill']:,.2f}")
+    c5.metric("Real Cash Flow", f"Rs. {latest['real_cash_flow']:,.2f}")
     st.caption(f"Latest month shown: {latest['month']}")
 
     st.markdown("### Monthly Cash Flow Trend")
@@ -2090,11 +2099,12 @@ def page_monthly_cash_flow():
         "month": "Month",
         "monthly_revenue": "Monthly Revenue",
         "driver_payable": "Driver Payable",
+        "platform_fee": "Platform Fee",
         "cash_before_electricity": "Cash Flow Before Electricity",
         "electricity_bill": "Electricity Bill",
         "real_cash_flow": "Real Cash Flow",
     })
-    for col in ["Monthly Revenue", "Driver Payable", "Cash Flow Before Electricity", "Electricity Bill", "Real Cash Flow"]:
+    for col in ["Monthly Revenue", "Driver Payable", "Platform Fee", "Cash Flow Before Electricity", "Electricity Bill", "Real Cash Flow"]:
         display[col] = display[col].map(lambda x: f"{x:,.2f}")
     st.dataframe(display, use_container_width=True, hide_index=True)
 

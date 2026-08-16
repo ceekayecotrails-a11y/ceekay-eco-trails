@@ -160,8 +160,8 @@ def sidebar_menu(user_type=None):
         render_centered_logo(145)
         st.markdown('<div class="ck-side-brand"><b>CEEKAY TOURS</b><span>Management Console</span></div>', unsafe_allow_html=True)
         st.divider()
-        icons={"Dashboard":"▦","Daily Entry":"＋","Profit Reports":"↗","Monthly Cash Flow":"↕","Vehicle Entry":"⚙","Vehicle Report":"◉","Logout":"↪"}
-        page=st.radio("Navigation",["Dashboard","Daily Entry","Profit Reports","Monthly Cash Flow","Vehicle Entry","Vehicle Report","Logout"],format_func=lambda x:f"{icons[x]}   {x}",label_visibility="collapsed")
+        icons={"Dashboard":"▦","Daily Entry":"＋","Profit Reports":"↗","Monthly Cash Flow":"↕","Vehicle Entry":"⚙","Vehicle Report":"◉","Settings":"☷","Logout":"↪"}
+        page=st.radio("Navigation",["Dashboard","Daily Entry","Profit Reports","Monthly Cash Flow","Vehicle Entry","Vehicle Report","Settings","Logout"],format_func=lambda x:f"{icons[x]}   {x}",label_visibility="collapsed")
         st.divider()
         st.caption("CEEKAY Tours • Admin Workspace")
         return page
@@ -2108,6 +2108,167 @@ def page_monthly_cash_flow():
         display[col] = display[col].map(lambda x: f"{x:,.2f}")
     st.dataframe(display, use_container_width=True, hide_index=True)
 
+
+# -------------------------------------------------------------------
+# SETTINGS — SAFE MASTER DATA EDITOR
+# -------------------------------------------------------------------
+def _settings_row_values(ws):
+    values = ws.get_all_values()
+    if not values:
+        return [], []
+    return values[0], values[1:]
+
+
+def _setting_text(value):
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _setting_number(value, default=0.0):
+    try:
+        if value in (None, ""):
+            return float(default)
+        return float(str(value).replace(",", "").strip())
+    except Exception:
+        return float(default)
+
+
+def page_settings():
+    st.caption("Change master/configuration values stored in the CEEKAY_Driver_Reports Google Sheet. Daily report history is protected and cannot be edited here.")
+
+    tab1, tab2, tab3 = st.tabs([
+        "Drivers & Assignment",
+        "Vehicle Master",
+        "Electricity Settings",
+    ])
+
+    # ---------------------------------------------------------------
+    # DRIVERS / VEHICLE ASSIGNMENT
+    # ---------------------------------------------------------------
+    with tab1:
+        st.markdown("### Drivers & Vehicle Assignment")
+        headers, rows = _settings_row_values(drivers_sheet)
+        if not rows:
+            st.info("No drivers are available in the drivers sheet.")
+        else:
+            options = {
+                f"{r[0] if len(r) > 0 else 'Driver'}  •  {r[3] if len(r) > 3 else ''}": i + 2
+                for i, r in enumerate(rows)
+            }
+            selected_label = st.selectbox("Select Driver", list(options.keys()), key="settings_driver_select")
+            sheet_row = options[selected_label]
+            row = rows[sheet_row - 2]
+            row = row + [""] * max(0, 4 - len(row))
+
+            with st.form("settings_driver_form"):
+                c1, c2 = st.columns(2)
+                driver_name = c1.text_input("Driver Name", value=_setting_text(row[0]))
+                vehicle_no = c2.text_input("Assigned Vehicle", value=_setting_text(row[3]))
+                username = c1.text_input("Username (legacy field)", value=_setting_text(row[1]))
+                password = c2.text_input("Password (legacy field)", value=_setting_text(row[2]))
+                save_driver = st.form_submit_button("Save Driver Settings", use_container_width=True)
+
+            if save_driver:
+                if not driver_name.strip():
+                    st.error("Driver name is required.")
+                elif not vehicle_no.strip():
+                    st.error("Assigned vehicle is required.")
+                else:
+                    drivers_sheet.update(
+                        f"A{sheet_row}:D{sheet_row}",
+                        [[driver_name.strip(), username.strip(), password.strip(), vehicle_no.strip()]],
+                    )
+                    st.success("Driver settings updated successfully.")
+                    st.rerun()
+
+        st.info("Username and password are retained only because they already exist in your sheet. The current system uses a single administrator login.")
+
+    # ---------------------------------------------------------------
+    # VEHICLE MASTER
+    # ---------------------------------------------------------------
+    with tab2:
+        st.markdown("### Vehicle Master Settings")
+        headers, rows = _settings_row_values(vehicle_master_sheet)
+        if not rows:
+            st.info("No vehicles are available in vehicle_master.")
+        else:
+            options = {
+                f"{r[0] if len(r) > 0 else 'Vehicle'}": i + 2
+                for i, r in enumerate(rows)
+            }
+            selected_vehicle_label = st.selectbox("Select Vehicle", list(options.keys()), key="settings_vehicle_select")
+            sheet_row = options[selected_vehicle_label]
+            row = rows[sheet_row - 2]
+            row = row + [""] * max(0, 12 - len(row))
+
+            with st.form("settings_vehicle_form"):
+                c1, c2 = st.columns(2)
+                vehicle_no = c1.text_input("Vehicle Number", value=_setting_text(row[0]))
+                license_date = c2.text_input("License Renewal Date", value=_setting_text(row[1]), help="Recommended format: YYYY-MM-DD")
+                insurance_date = c1.text_input("Insurance Renewal Date", value=_setting_text(row[2]), help="Recommended format: YYYY-MM-DD")
+                lease_installment = c2.number_input("Lease Installment Amount (Rs.)", min_value=0.0, value=_setting_number(row[3]), step=1000.0)
+                lease_total = c1.number_input("Total Lease Installments", min_value=0.0, value=_setting_number(row[4]), step=1.0)
+                lease_start = c2.text_input("Lease Start Date", value=_setting_text(row[5]), help="Recommended format: YYYY-MM-DD")
+                alignment_interval = c1.number_input("Wheel Alignment Interval (KM)", min_value=0.0, value=_setting_number(row[6]), step=500.0)
+                air_filter_interval = c2.number_input("Air Filter Interval (KM)", min_value=0.0, value=_setting_number(row[7]), step=1000.0)
+                purchase_date = c1.text_input("Purchase Date", value=_setting_text(row[8]), help="Recommended format: YYYY-MM-DD")
+                purchase_cost = c2.number_input("Purchase Cost (Rs.)", min_value=0.0, value=_setting_number(row[9]), step=10000.0)
+                useful_years = c1.number_input("Useful Life (Years)", min_value=0.0, value=_setting_number(row[10]), step=1.0)
+                cost_per_km = c2.number_input("Running Cost per KM (Rs.)", min_value=0.0, value=_setting_number(row[11]), step=1.0)
+                save_vehicle = st.form_submit_button("Save Vehicle Settings", use_container_width=True)
+
+            if save_vehicle:
+                if not vehicle_no.strip():
+                    st.error("Vehicle number is required.")
+                else:
+                    vehicle_master_sheet.update(
+                        f"A{sheet_row}:L{sheet_row}",
+                        [[
+                            vehicle_no.strip(), license_date.strip(), insurance_date.strip(),
+                            lease_installment, lease_total, lease_start.strip(),
+                            alignment_interval, air_filter_interval, purchase_date.strip(),
+                            purchase_cost, useful_years, cost_per_km,
+                        ]],
+                    )
+                    st.success("Vehicle master settings updated successfully.")
+                    st.rerun()
+
+        st.warning("Changes to cost per KM, service intervals, lease details, purchase cost or useful life will affect future calculations/reports that use those master values.")
+
+    # ---------------------------------------------------------------
+    # MONTHLY ELECTRICITY
+    # ---------------------------------------------------------------
+    with tab3:
+        st.markdown("### Monthly Electricity Settings")
+        headers, rows = _settings_row_values(monthly_cash_flow_sheet)
+        if not rows:
+            st.info("No electricity bills have been recorded yet. Add the first one from Monthly Cash Flow.")
+        else:
+            options = {
+                f"{r[0] if len(r) > 0 else 'Month'}": i + 2
+                for i, r in enumerate(rows)
+            }
+            selected_month_label = st.selectbox("Select Month", list(options.keys()), key="settings_electricity_month")
+            sheet_row = options[selected_month_label]
+            row = rows[sheet_row - 2]
+            row = row + [""] * max(0, 4 - len(row))
+
+            with st.form("settings_electricity_form"):
+                month = st.text_input("Month", value=_setting_text(row[0]), help="Use YYYY-MM format")
+                bill = st.number_input("Electricity Bill (Rs.)", min_value=0.0, value=_setting_number(row[1]), step=100.0)
+                note = st.text_input("Note", value=_setting_text(row[3]))
+                save_electricity = st.form_submit_button("Save Electricity Settings", use_container_width=True)
+
+            if save_electricity:
+                now_txt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                monthly_cash_flow_sheet.update(
+                    f"A{sheet_row}:D{sheet_row}",
+                    [[month.strip(), bill, now_txt, note.strip()]],
+                )
+                st.success("Electricity settings updated successfully.")
+                st.rerun()
+
 # -------------------------------------------------------------------
 # MAIN APP — SINGLE ADMIN ACCOUNT
 # -------------------------------------------------------------------
@@ -2138,7 +2299,8 @@ else:
       "Profit Reports":("Profit Reports","Review daily, date-range and monthly business performance."),
       "Monthly Cash Flow":("Monthly Cash Flow","Track monthly cash available after driver payments and electricity."),
       "Vehicle Entry":("Vehicle Costs & Service","Maintain vehicle master data, running costs and service expenses."),
-      "Vehicle Report":("Vehicle Report","Review vehicle-level income, expenses, mileage and profitability.")
+      "Vehicle Report":("Vehicle Report","Review vehicle-level income, expenses, mileage and profitability."),
+      "Settings":("Settings","Update master values and configuration stored in the CEEKAY Tours Google Sheet.")
     }
     if page!="Logout":
         title,sub=meta[page]
@@ -2149,6 +2311,7 @@ else:
     elif page=="Monthly Cash Flow": page_monthly_cash_flow()
     elif page=="Vehicle Entry": page_vehicle_entry()
     elif page=="Vehicle Report": page_vehicle_report()
+    elif page=="Settings": page_settings()
     elif page=="Logout":
         st.session_state.clear()
         st.rerun()

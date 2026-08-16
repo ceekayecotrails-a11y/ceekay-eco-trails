@@ -941,9 +941,39 @@ def page_admin_dashboard():
 
     total_revenue = filtered["fare"].sum()
     total_salary = filtered["driver_salary"].sum()
+    total_tolls = filtered["toll_fee"].sum()
+    total_tips = filtered["tip"].sum()
+    total_driver_cost = total_salary + total_tolls + total_tips
     total_platform = filtered["platform_fee"].sum()
     running_cost = filtered["vehicle_running_cost"].sum()
-    total_cost = total_salary + total_platform + running_cost
+
+    variable_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+    if not variable_df.empty:
+        variable_df["amount"] = pd.to_numeric(variable_df.get("amount", 0), errors="coerce").fillna(0)
+        variable_df["date"] = pd.to_datetime(variable_df.get("date"), errors="coerce")
+        variable_period = variable_df[(variable_df["date"] >= pd.to_datetime(start_date)) & (variable_df["date"] <= pd.to_datetime(end_date))].copy()
+        total_variable = variable_period["amount"].sum()
+    else:
+        variable_period = pd.DataFrame(columns=["vehicle_no", "amount"])
+        total_variable = 0.0
+
+    master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
+    depreciation_by_vehicle = {}
+    if not master_df.empty:
+        for _, mrow in master_df.iterrows():
+            vehicle_key = str(mrow.get("vehicle_no", "")).strip()
+            try:
+                purchase_cost = float(mrow.get("purchase_cost", 0) or 0)
+                useful_years = float(mrow.get("useful_years", 0) or 0)
+                monthly_dep = purchase_cost / (useful_years * 12) if useful_years > 0 else 0
+            except (TypeError, ValueError):
+                monthly_dep = 0
+            depreciation_by_vehicle[vehicle_key] = monthly_dep
+
+    selected_vehicles = filtered["vehicle_no"].astype(str).str.strip().unique().tolist()
+    total_depreciation = sum(depreciation_by_vehicle.get(v, 0) for v in selected_vehicles)
+
+    total_cost = total_driver_cost + total_platform + running_cost + total_variable + total_depreciation
     net_profit = total_revenue - total_cost
     total_mileage = filtered["daily_mileage"].sum()
     profit_per_km = net_profit / total_mileage if total_mileage > 0 else 0
@@ -971,13 +1001,24 @@ def page_admin_dashboard():
     with k1:
         metric_card("▣", "TOTAL REVENUE", private(f"Rs. {total_revenue:,.0f}"), "Total fare collected", "#079455")
     with k2:
-        metric_card("●", "TOTAL PROFIT", private(f"Rs. {net_profit:,.0f}"), "After running costs", "#2563eb")
+        metric_card("●", "FINAL NET PROFIT", private(f"Rs. {net_profit:,.0f}"), "After all recorded costs", "#2563eb")
     with k3:
         metric_card("◉", "TOTAL KM TRAVELLED", private(f"{total_mileage:,.0f} km"), "Total mileage", "#9333ea")
     with k4:
         metric_card("↗", "AVG PROFIT / KM", private(f"Rs. {profit_per_km:,.2f}"), "Average profit per KM", "#ea580c")
     with k5:
         metric_card("⚑", "TOTAL TRIPS", private(f"{total_trips:,.0f}"), "Recorded trips", "#0f9f9a")
+
+    st.markdown('<div class="ck-dashboard-gap"></div>', unsafe_allow_html=True)
+
+    st.markdown('<div class="ck-panel-title">Final Financial Position</div>', unsafe_allow_html=True)
+    f1, f2, f3 = st.columns(3)
+    with f1:
+        metric_card("▣", "TOTAL REVENUE", private(f"Rs. {total_revenue:,.0f}"), "Selected period", "#079455")
+    with f2:
+        metric_card("−", "TOTAL FINAL COST", private(f"Rs. {total_cost:,.0f}"), "All recorded business costs", "#ef4444")
+    with f3:
+        metric_card("●", "FINAL NET PROFIT", private(f"Rs. {net_profit:,.0f}"), "Revenue less final cost", "#2563eb")
 
     st.markdown('<div class="ck-dashboard-gap"></div>', unsafe_allow_html=True)
 
@@ -1010,11 +1051,22 @@ def page_admin_dashboard():
 
     vehicle_summary = filtered.groupby("vehicle_no", as_index=False).agg(
         fare=("fare", "sum"), driver_salary=("driver_salary", "sum"),
+        toll_fee=("toll_fee", "sum"), tip=("tip", "sum"),
         platform_fee=("platform_fee", "sum"), vehicle_running_cost=("vehicle_running_cost", "sum")
     )
-    vehicle_summary["net_profit"] = vehicle_summary["fare"] - (
-        vehicle_summary["driver_salary"] + vehicle_summary["platform_fee"] + vehicle_summary["vehicle_running_cost"]
-    )
+    vehicle_summary["driver_total_cost"] = vehicle_summary["driver_salary"] + vehicle_summary["toll_fee"] + vehicle_summary["tip"]
+    if not variable_period.empty and "vehicle_no" in variable_period.columns:
+        variable_by_vehicle = variable_period.copy()
+        variable_by_vehicle["vehicle_no"] = variable_by_vehicle["vehicle_no"].astype(str).str.strip()
+        variable_by_vehicle = variable_by_vehicle.groupby("vehicle_no", as_index=False)["amount"].sum().rename(columns={"amount":"variable_cost"})
+        vehicle_summary["vehicle_no"] = vehicle_summary["vehicle_no"].astype(str).str.strip()
+        vehicle_summary = vehicle_summary.merge(variable_by_vehicle, on="vehicle_no", how="left")
+    else:
+        vehicle_summary["variable_cost"] = 0.0
+    vehicle_summary["variable_cost"] = pd.to_numeric(vehicle_summary["variable_cost"], errors="coerce").fillna(0)
+    vehicle_summary["depreciation"] = vehicle_summary["vehicle_no"].map(depreciation_by_vehicle).fillna(0)
+    vehicle_summary["total_cost"] = vehicle_summary["driver_total_cost"] + vehicle_summary["platform_fee"] + vehicle_summary["vehicle_running_cost"] + vehicle_summary["variable_cost"] + vehicle_summary["depreciation"]
+    vehicle_summary["net_profit"] = vehicle_summary["fare"] - vehicle_summary["total_cost"]
     vehicle_summary = vehicle_summary.sort_values("net_profit", ascending=False)
 
     c1, c2, c3 = st.columns([1.7, 1.0, 1.25])
@@ -1025,20 +1077,21 @@ def page_admin_dashboard():
         st.markdown('<div class="ck-panel-title">Profit vs Expense</div>', unsafe_allow_html=True)
         st.plotly_chart(fig_profit, use_container_width=True, config={"displayModeBar": False})
     with c3:
-        st.markdown('<div class="ck-panel-title">Top Performing Vehicles</div>', unsafe_allow_html=True)
+        st.markdown('<div class="ck-panel-title">Vehicle Cost vs Profit</div>', unsafe_allow_html=True)
         if vehicle_summary.empty:
             st.caption("No vehicle data available.")
         else:
             for rank, (_, row) in enumerate(vehicle_summary.head(5).iterrows(), start=1):
-                value = private(f"Rs. {row['net_profit']:,.0f}")
+                profit_value = private(f"Rs. {row['net_profit']:,.0f}")
+                cost_value = private(f"Rs. {row['total_cost']:,.0f}")
                 st.markdown(
                     f'''<div class="ck-rank-row"><div class="ck-rank-no">{rank}</div>
-                    <div class="ck-rank-main"><b>{row['vehicle_no']}</b><span>Vehicle profit</span></div>
-                    <div class="ck-rank-value">{value}</div></div>''', unsafe_allow_html=True)
+                    <div class="ck-rank-main"><b>{row['vehicle_no']}</b><span>Total Cost: {cost_value}</span></div>
+                    <div class="ck-rank-value">{profit_value}<br><small>Net Profit</small></div></div>''', unsafe_allow_html=True)
 
     expense_df = pd.DataFrame({
-        "Category": ["Vehicle Running Costs", "Driver Salary", "Platform Fee"],
-        "Amount": [running_cost, total_salary, total_platform]
+        "Category": ["Vehicle Running Costs", "Driver Cost", "Platform Fee", "Variable Expenses", "Depreciation"],
+        "Amount": [running_cost, total_driver_cost, total_platform, total_variable, total_depreciation]
     })
     fig_expense = px.pie(expense_df, names="Category", values="Amount", hole=.55)
     fig_expense.update_traces(textinfo="none", hovertemplate="%{label}: Rs. %{value:,.0f}<extra></extra>")

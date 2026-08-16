@@ -1688,7 +1688,13 @@ def page_admin_daily_entry():
 
     last_end_mileage = get_last_end_mileage(selected_driver_name)
 
-    with st.form("admin_daily_entry_form", clear_on_submit=True):
+    # A versioned form key lets us clear the form only after a successful save,
+    # while keeping all values visible when "Show Salary Calculation" is clicked.
+    if "daily_entry_form_version" not in st.session_state:
+        st.session_state.daily_entry_form_version = 0
+    form_version = st.session_state.daily_entry_form_version
+
+    with st.form(f"admin_daily_entry_form_{form_version}", clear_on_submit=False):
         report_date = st.date_input("Select Date", value=date.today())
 
         c1, c2 = st.columns(2)
@@ -1727,21 +1733,52 @@ def page_admin_daily_entry():
 
         admin_note = st.text_input("Note")
 
-        submitted = st.form_submit_button("Save Daily Entry", use_container_width=True)
+        action1, action2 = st.columns(2)
+        calculate_clicked = action1.form_submit_button(
+            "Show Salary Calculation",
+            use_container_width=True
+        )
+        submitted = action2.form_submit_button(
+            "Save Daily Entry",
+            use_container_width=True
+        )
 
-    if not submitted:
+    if not calculate_clicked and not submitted:
         return
 
     if end_mileage < start_mileage:
         st.error("End mileage cannot be lower than start mileage.")
         return
 
+    # Existing operational calculations are intentionally unchanged.
     daily_mileage = max(0, end_mileage - start_mileage)
     loss_mileage = daily_mileage - uber_hire_mileage
     net_fare = max(0, fare - toll_fee)
     driver_salary = net_fare * 0.30
     total_driver_salary = driver_salary + toll_fee + tip
     amount_to_ceekay = cash_collected - total_driver_salary
+
+    # Preview the exact salary figures before saving the daily report.
+    if calculate_clicked:
+        st.markdown("### Driver Payment Summary")
+        p1, p2, p3 = st.columns(3)
+        p1.metric("Driver Salary (30%)", f"Rs. {driver_salary:,.2f}")
+        p2.metric("Toll Reimbursement", f"Rs. {toll_fee:,.2f}")
+        p3.metric("Tip", f"Rs. {tip:,.2f}")
+
+        p4, p5, p6 = st.columns(3)
+        p4.metric("Total Driver Payable", f"Rs. {total_driver_salary:,.2f}")
+        p5.metric("Amount to CEEKAY", f"Rs. {amount_to_ceekay:,.2f}")
+        p6.metric("Other Expenses", f"Rs. {other_expenses:,.2f}")
+
+        st.caption(
+            f"Daily Mileage: {daily_mileage:,.2f} km  |  "
+            f"Uber Hire Mileage: {uber_hire_mileage:,.2f} km  |  "
+            f"Loss Mileage: {loss_mileage:,.2f} km  |  "
+            f"Net Fare for Salary: Rs. {net_fare:,.2f}"
+        )
+        st.info("Review the payment figures above, then click Save Daily Entry when ready.")
+        return
 
     master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
     cost_per_km = 0.0
@@ -1796,9 +1833,12 @@ def page_admin_daily_entry():
     daily_sheet.append_row(new_row)
 
     st.success(
-        f"Daily entry saved successfully. Driver Salary: Rs. {driver_salary:,.2f} | "
+        f"Daily entry saved successfully. Total Driver Payable: Rs. {total_driver_salary:,.2f} | "
         f"Amount to CEEKAY: Rs. {amount_to_ceekay:,.2f}"
     )
+
+    # Clear only after saving; previewing does not clear the entered data.
+    st.session_state.daily_entry_form_version += 1
     st.rerun()
 
 

@@ -58,6 +58,22 @@ st.markdown("""<style>
 </style>""",unsafe_allow_html=True)
 
 
+# Executive dashboard styling
+st.markdown("""<style>
+.ck-dashboard-gap{height:.45rem}
+.ck-kpi-card{background:#fff;border:1px solid #e5eaf1;border-radius:16px;padding:18px 16px;min-height:138px;box-shadow:0 5px 16px rgba(15,23,42,.04);margin-bottom:8px}
+.ck-kpi-top{display:flex;align-items:flex-start;gap:12px}.ck-kpi-icon{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:800;flex:0 0 48px}
+.ck-kpi-copy{min-width:0}.ck-kpi-label{font-size:.68rem;font-weight:800;color:#334155;letter-spacing:.02em;margin:1px 0 7px}.ck-kpi-value{font-size:1.22rem;font-weight:800;line-height:1.22;white-space:nowrap}.ck-kpi-note{font-size:.72rem;color:#64748b;margin-top:8px}
+.ck-panel-title{font-size:.92rem;font-weight:800;color:#0f172a;margin:0 0 .35rem;padding:.1rem .1rem .2rem}
+[data-testid="stPlotlyChart"]{background:#fff;border:1px solid #e5eaf1;border-radius:16px;padding:6px 8px;box-shadow:0 5px 16px rgba(15,23,42,.04)}
+.ck-rank-row{background:#fff;border-bottom:1px solid #edf1f5;padding:13px 7px;display:flex;align-items:center;gap:10px}.ck-rank-row:last-child{border-bottom:0}.ck-rank-no{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f1f5f9;color:#334155;font-weight:800;font-size:.78rem}.ck-rank-main{display:flex;flex-direction:column;flex:1}.ck-rank-main b{font-size:.82rem;color:#0f172a}.ck-rank-main span{font-size:.68rem;color:#94a3b8;margin-top:2px}.ck-rank-value{font-size:.77rem;color:#079455;font-weight:800;text-align:right}
+.ck-recent-row{background:#fff;border-bottom:1px solid #edf1f5;padding:12px 6px;display:flex;justify-content:space-between;align-items:center}.ck-recent-row div{display:flex;gap:15px;align-items:center}.ck-recent-row b{font-size:.76rem;color:#334155}.ck-recent-row span{font-size:.74rem;color:#64748b}.ck-recent-row strong{font-size:.77rem;color:#079455}
+.ck-alert{border-radius:12px;padding:11px 12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;border:1px solid transparent}.ck-alert-danger{background:#fff1f1;border-color:#ffd6d6}.ck-alert-warning{background:#fff8e8;border-color:#ffe8b1}.ck-alert-success{background:#effaf2;border-color:#d3f0db}.ck-alert-symbol{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.85);font-weight:900;font-size:.75rem}.ck-alert b{font-size:.73rem;color:#334155;display:block;line-height:1.25}.ck-alert small{display:block;color:#64748b;font-size:.66rem;margin-top:3px;line-height:1.25}
+.ck-dashboard-footer{text-align:center;color:#94a3b8;font-size:.75rem;padding:26px 0 4px}
+@media(max-width:1200px){.ck-kpi-value{font-size:1.02rem}.ck-kpi-icon{width:40px;height:40px;flex-basis:40px}}
+</style>""", unsafe_allow_html=True)
+
+
 
 def render_centered_logo(width=130):
     """Render logo with true HTML centering (works in login and sidebar)."""
@@ -871,637 +887,211 @@ def get_vehicle_service_data():
 # ADMIN DASHBOARD PAGE
 # -------------------------------------------------------------------
 def page_admin_dashboard():
-
-    # Page title is rendered once by the main navigation header.
-    # Avoid a second dashboard heading inside this page.
+    # Executive dashboard — UI rebuilt without changing the source data or core formulas.
     df = pd.DataFrame(daily_sheet.get_all_records())
-    df = df[df["status"] == "Correct"]
-
     if df.empty:
         st.warning("No data available.")
         return
 
-    # Convert numeric columns safely
-    numeric_cols = [
-        "fare", "driver_salary", "platform_fee",
-        "toll_fee", "tip",
-        "daily_mileage", "uber_hire_mileage",
-        "loss_mileage", "amount_to_ceekay",
-        "bank_deposit"
-    ]
+    if "status" in df.columns:
+        df = df[df["status"] == "Correct"].copy()
+    if df.empty:
+        st.warning("No approved data available.")
+        return
 
+    numeric_cols = [
+        "fare", "driver_salary", "platform_fee", "toll_fee", "tip",
+        "daily_mileage", "uber_hire_mileage", "loss_mileage",
+        "amount_to_ceekay", "bank_deposit", "vehicle_running_cost"
+    ]
     for col in numeric_cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+        else:
+            df[col] = 0.0
 
-    df["date"] = pd.to_datetime(df["date"])
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"])
+    if df.empty:
+        st.warning("No valid dated records are available.")
+        return
 
-    # Date Filter
-    col1, col2 = st.columns(2)
-    start_date = col1.date_input("From Date", df["date"].min())
-    end_date = col2.date_input("To Date", df["date"].max())
+    if "show_overview_figures" not in st.session_state:
+        st.session_state.show_overview_figures = False
 
-    df = df[
+    top_left, top_mid, top_right = st.columns([4.4, 1.0, 2.6])
+    with top_mid:
+        label = "Hide Figures" if st.session_state.show_overview_figures else "View Figures"
+        if st.button(label, key="overview_figure_toggle", use_container_width=True):
+            st.session_state.show_overview_figures = not st.session_state.show_overview_figures
+            st.rerun()
+    with top_right:
+        d1, d2 = st.columns(2)
+        start_date = d1.date_input("From", df["date"].min().date(), key="dash_from")
+        end_date = d2.date_input("To", df["date"].max().date(), key="dash_to")
+
+    filtered = df[
         (df["date"] >= pd.to_datetime(start_date)) &
         (df["date"] <= pd.to_datetime(end_date))
-    ]
+    ].copy()
 
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "📊 Overview",
-        "🚗 Vehicle Performance",
-        "💰 Expense Insights",
-        "🚗 Vehicle Details"
-    ])
+    if filtered.empty:
+        st.info("No records found for the selected date range.")
+        return
 
-    # =====================================================
-    # TAB 1 — BUSINESS OVERVIEW
-    # =====================================================
-    with tab1:
-        # Overview privacy control (UI only; calculations remain unchanged)
-        if "show_overview_figures" not in st.session_state:
-            st.session_state.show_overview_figures = False
+    total_revenue = filtered["fare"].sum()
+    total_salary = filtered["driver_salary"].sum()
+    total_platform = filtered["platform_fee"].sum()
+    running_cost = filtered["vehicle_running_cost"].sum()
+    total_cost = total_salary + total_platform + running_cost
+    net_profit = total_revenue - total_cost
+    total_mileage = filtered["daily_mileage"].sum()
+    profit_per_km = net_profit / total_mileage if total_mileage > 0 else 0
+    total_trips = len(filtered)
 
-        privacy_col, status_col = st.columns([1, 4])
-        with privacy_col:
-            toggle_label = (
-                "🙈 Hide Figures"
-                if st.session_state.show_overview_figures
-                else "👁 View Figures"
-            )
-            if st.button(
-                toggle_label,
-                key="overview_figure_toggle",
-                use_container_width=True
-            ):
-                st.session_state.show_overview_figures = (
-                    not st.session_state.show_overview_figures
-                )
-                st.rerun()
+    def private(value):
+        return value if st.session_state.show_overview_figures else "********"
 
-        with status_col:
-            st.caption(
-                "Overview figures are visible."
-                if st.session_state.show_overview_figures
-                else "Overview figures are hidden for privacy."
-            )
+    def metric_card(icon, label, value, note, accent):
+        st.markdown(
+            f'''<div class="ck-kpi-card">
+                <div class="ck-kpi-top">
+                    <div class="ck-kpi-icon" style="background:{accent}18;color:{accent};">{icon}</div>
+                    <div class="ck-kpi-copy">
+                        <div class="ck-kpi-label">{label}</div>
+                        <div class="ck-kpi-value" style="color:{accent};">{value}</div>
+                        <div class="ck-kpi-note">{note}</div>
+                    </div>
+                </div>
+            </div>''',
+            unsafe_allow_html=True,
+        )
 
-        def overview_value(formatted_value):
-            return (
-                formatted_value
-                if st.session_state.show_overview_figures
-                else "********"
-            )
+    k1, k2, k3, k4, k5 = st.columns(5)
+    with k1:
+        metric_card("▣", "TOTAL REVENUE", private(f"Rs. {total_revenue:,.0f}"), "Total fare collected", "#079455")
+    with k2:
+        metric_card("●", "TOTAL PROFIT", private(f"Rs. {net_profit:,.0f}"), "After running costs", "#2563eb")
+    with k3:
+        metric_card("◉", "TOTAL KM TRAVELLED", private(f"{total_mileage:,.0f} km"), "Total mileage", "#9333ea")
+    with k4:
+        metric_card("↗", "AVG PROFIT / KM", private(f"Rs. {profit_per_km:,.2f}"), "Average profit per KM", "#ea580c")
+    with k5:
+        metric_card("⚑", "TOTAL TRIPS", private(f"{total_trips:,.0f}"), "Recorded trips", "#0f9f9a")
 
-        # =====================================================
-        # SERVICE ALERT SECTION
-        # =====================================================
+    st.markdown('<div class="ck-dashboard-gap"></div>', unsafe_allow_html=True)
 
-        st.markdown("## Service Alerts")
+    trend = filtered.copy()
+    trend["month"] = trend["date"].dt.to_period("M").dt.to_timestamp()
+    trend = trend.groupby("month", as_index=False)["fare"].sum()
+    fig_revenue = px.line(trend, x="month", y="fare", markers=True)
+    fig_revenue.update_traces(line=dict(width=3, color="#079455"), marker=dict(size=7, color="#079455"), fill="tozeroy", fillcolor="rgba(7,148,85,.08)")
+    fig_revenue.update_layout(
+        margin=dict(l=12, r=12, t=18, b=10), height=300,
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        xaxis_title="", yaxis_title="", showlegend=False,
+        font=dict(color="#475569", size=11),
+        xaxis=dict(showgrid=False), yaxis=dict(gridcolor="#edf2f7", tickprefix="Rs. ")
+    )
 
-        vehicle_data = get_vehicle_service_data()
+    profit_amount = max(net_profit, 0)
+    expense_amount = max(total_cost, 0)
+    donut_df = pd.DataFrame({"Category": ["Profit", "Expenses"], "Amount": [profit_amount, expense_amount]})
+    fig_profit = px.pie(donut_df, names="Category", values="Amount", hole=.67,
+                        color="Category", color_discrete_map={"Profit":"#12a36d", "Expenses":"#ef4444"})
+    fig_profit.update_traces(textinfo="none", hovertemplate="%{label}: Rs. %{value:,.0f}<extra></extra>")
+    profit_pct = profit_amount / (profit_amount + expense_amount) * 100 if (profit_amount + expense_amount) else 0
+    fig_profit.update_layout(
+        margin=dict(l=8,r=8,t=8,b=8), height=255, showlegend=True,
+        legend=dict(orientation="h", y=-.04, x=.5, xanchor="center"),
+        paper_bgcolor="rgba(0,0,0,0)", font=dict(color="#475569", size=11),
+        annotations=[dict(text=f"<b>{profit_pct:.0f}%</b><br>Profit", x=.5,y=.5,font_size=20,showarrow=False,font_color="#0f172a")]
+    )
 
-        if vehicle_data.empty:
-            st.info("No vehicle data available.")
+    vehicle_summary = filtered.groupby("vehicle_no", as_index=False).agg(
+        fare=("fare", "sum"), driver_salary=("driver_salary", "sum"),
+        platform_fee=("platform_fee", "sum"), vehicle_running_cost=("vehicle_running_cost", "sum")
+    )
+    vehicle_summary["net_profit"] = vehicle_summary["fare"] - (
+        vehicle_summary["driver_salary"] + vehicle_summary["platform_fee"] + vehicle_summary["vehicle_running_cost"]
+    )
+    vehicle_summary = vehicle_summary.sort_values("net_profit", ascending=False)
+
+    c1, c2, c3 = st.columns([1.7, 1.0, 1.25])
+    with c1:
+        st.markdown('<div class="ck-panel-title">Revenue Trend</div>', unsafe_allow_html=True)
+        st.plotly_chart(fig_revenue, use_container_width=True, config={"displayModeBar": False})
+    with c2:
+        st.markdown('<div class="ck-panel-title">Profit vs Expense</div>', unsafe_allow_html=True)
+        st.plotly_chart(fig_profit, use_container_width=True, config={"displayModeBar": False})
+    with c3:
+        st.markdown('<div class="ck-panel-title">Top Performing Vehicles</div>', unsafe_allow_html=True)
+        if vehicle_summary.empty:
+            st.caption("No vehicle data available.")
         else:
+            for rank, (_, row) in enumerate(vehicle_summary.head(5).iterrows(), start=1):
+                value = private(f"Rs. {row['net_profit']:,.0f}")
+                st.markdown(
+                    f'''<div class="ck-rank-row"><div class="ck-rank-no">{rank}</div>
+                    <div class="ck-rank-main"><b>{row['vehicle_no']}</b><span>Vehicle profit</span></div>
+                    <div class="ck-rank-value">{value}</div></div>''', unsafe_allow_html=True)
 
-            alerts = []
+    expense_df = pd.DataFrame({
+        "Category": ["Vehicle Running Costs", "Driver Salary", "Platform Fee"],
+        "Amount": [running_cost, total_salary, total_platform]
+    })
+    fig_expense = px.pie(expense_df, names="Category", values="Amount", hole=.55)
+    fig_expense.update_traces(textinfo="none", hovertemplate="%{label}: Rs. %{value:,.0f}<extra></extra>")
+    fig_expense.update_layout(
+        margin=dict(l=4,r=4,t=4,b=4), height=240,
+        legend=dict(orientation="v", y=.5, x=1.0),
+        paper_bgcolor="rgba(0,0,0,0)", font=dict(color="#475569", size=10)
+    )
 
-            for _, row in vehicle_data.iterrows():
+    recent = filtered.sort_values(["date"], ascending=False).head(5)
 
-                current = row["current_mileage"]
+    alerts = []
+    vehicle_data = get_vehicle_service_data()
+    if not vehicle_data.empty:
+        for _, row in vehicle_data.iterrows():
+            current = row.get("current_mileage", 0)
+            if row.get("alignment_interval_km", 0) > 0:
+                if current >= row.get("next_alignment", 0):
+                    alerts.append(("danger", f"{row['vehicle_no']} - Wheel Alignment OVERDUE", f"Current mileage: {current:,.0f} km"))
+                elif current >= row.get("next_alignment", 0) - 500:
+                    alerts.append(("warning", f"{row['vehicle_no']} - Wheel Alignment Due Soon", f"Current mileage: {current:,.0f} km"))
+            if row.get("air_filter_interval_km", 0) > 0:
+                if current >= row.get("next_air_filter", 0):
+                    alerts.append(("danger", f"{row['vehicle_no']} - Air Filter OVERDUE", f"Current mileage: {current:,.0f} km"))
+                elif current >= row.get("next_air_filter", 0) - 1000:
+                    alerts.append(("warning", f"{row['vehicle_no']} - Air Filter Due Soon", f"Current mileage: {current:,.0f} km"))
 
-                if row["alignment_interval_km"] > 0:
-
-                    if current >= row["next_alignment"]:
-                        alerts.append(f"🔴 {row['vehicle_no']} - Wheel Alignment OVERDUE")
-
-                    elif current >= row["next_alignment"] - 500:
-                        alerts.append(f"🟡 {row['vehicle_no']} - Wheel Alignment Due Soon")
-
-                if row["air_filter_interval_km"] > 0:
-
-                    if current >= row["next_air_filter"]:
-                        alerts.append(f"🔴 {row['vehicle_no']} - Air Filter OVERDUE")
-
-                    elif current >= row["next_air_filter"] - 1000:
-                        alerts.append(f"🟡 {row['vehicle_no']} - Air Filter Due Soon")
-
-            if alerts:
-                for alert in alerts:
-                    st.warning(alert)
-            else:
-                st.success("All vehicles are service-ready ✅")
-        st.markdown("---")
-
-        total_revenue = df["fare"].sum()
-
-        total_revenue = df["fare"].sum()
-        total_salary = df["driver_salary"].sum()
-        total_platform = df["platform_fee"].sum()
-
-        # Load vehicle cost per km
-        df["vehicle_running_cost"] = pd.to_numeric(
-            df.get("vehicle_running_cost", 0),
-            errors="coerce"
-        ).fillna(0)
-
-        running_cost = df["vehicle_running_cost"].sum()
-        total_mileage = df["daily_mileage"].sum()
-        total_cost = total_salary + total_platform + running_cost
-        net_profit = total_revenue - total_cost
-
-        if total_mileage > 0:
-            profit_per_km = net_profit / total_mileage
+    b1, b2, b3 = st.columns([1.15, 1.2, 1.15])
+    with b1:
+        st.markdown('<div class="ck-panel-title">Expense Summary</div>', unsafe_allow_html=True)
+        st.plotly_chart(fig_expense, use_container_width=True, config={"displayModeBar": False})
+    with b2:
+        st.markdown('<div class="ck-panel-title">Recent Entries</div>', unsafe_allow_html=True)
+        if recent.empty:
+            st.caption("No recent entries.")
         else:
-            profit_per_km = 0
-
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Total Revenue", overview_value(f"Rs. {total_revenue:,.0f}"))
-        col2.metric("Total Cost", overview_value(f"Rs. {total_cost:,.0f}"))
-        col3.metric("Net Profit", overview_value(f"Rs. {net_profit:,.0f}"))
-        col4.metric("Profit per KM", overview_value(f"Rs. {profit_per_km:,.2f}"))
-
-        st.markdown("---")
-
-        # Revenue Trend vehicle selector (chart display only)
-        vehicle_options = ["All Vehicles"]
-        if "vehicle_no" in df.columns:
-            available_vehicles = sorted(
-                {
-                    str(vehicle).strip()
-                    for vehicle in df["vehicle_no"].dropna().tolist()
-                    if str(vehicle).strip()
-                }
-            )
-            vehicle_options.extend(available_vehicles)
-
-        selected_revenue_vehicle = st.selectbox(
-            "Revenue Trend Vehicle",
-            vehicle_options,
-            index=0,
-            key="revenue_trend_vehicle_filter"
-        )
-
-        if selected_revenue_vehicle == "All Vehicles":
-            trend_df = df
-            trend_title = "Revenue Trend - All Vehicles"
+            for _, row in recent.iterrows():
+                amount = private(f"Rs. {row['fare']:,.0f}")
+                st.markdown(
+                    f'''<div class="ck-recent-row"><div><b>{row['date'].strftime('%Y/%m/%d')}</b><span>{row['vehicle_no']}</span></div>
+                    <strong>{amount}</strong></div>''', unsafe_allow_html=True)
+    with b3:
+        st.markdown('<div class="ck-panel-title">Service Alerts</div>', unsafe_allow_html=True)
+        if alerts:
+            for level, title, detail in alerts[:5]:
+                symbol = "!" if level == "danger" else "•"
+                st.markdown(
+                    f'''<div class="ck-alert ck-alert-{level}"><span class="ck-alert-symbol">{symbol}</span>
+                    <div><b>{title}</b><small>{detail}</small></div></div>''', unsafe_allow_html=True)
         else:
-            trend_df = df[
-                df["vehicle_no"].astype(str).str.strip() == selected_revenue_vehicle
-            ]
-            trend_title = f"Revenue Trend - {selected_revenue_vehicle}"
+            st.markdown('<div class="ck-alert ck-alert-success"><span class="ck-alert-symbol">✓</span><div><b>All vehicles are service-ready</b><small>No service alerts at the moment.</small></div></div>', unsafe_allow_html=True)
 
-        daily_trend = (
-            trend_df.groupby(trend_df["date"].dt.date)["fare"]
-            .sum()
-            .reset_index()
-        )
-
-        fig = px.line(
-            daily_trend,
-            x="date",
-            y="fare",
-            title=trend_title,
-            markers=True
-        )
-        fig.update_layout(
-            xaxis_title="Date",
-            yaxis_title="Revenue (Rs.)"
-        )
-        st.plotly_chart(fig, use_container_width=True)
-        # ---------------------------------
-        # REVENUE BREAKDOWN PIE CHART
-        # ---------------------------------
-
-        st.markdown("---")
-        st.subheader("Revenue Breakdown")
-
-        # -----------------------------
-        # VEHICLE EXPENSES (VARIABLE)
-        # -----------------------------
-        vehicle_expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
-
-        vehicle_expense_total = 0
-
-        if not vehicle_expense_df.empty:
-            vehicle_expense_df["amount"] = pd.to_numeric(
-                vehicle_expense_df["amount"],
-                errors="coerce"
-            ).fillna(0)
-
-            vehicle_expense_total = vehicle_expense_df["amount"].sum()
-
-        # -----------------------------
-        # RUNNING COST (ALREADY IN YOUR DATA)
-        # -----------------------------
-        df["vehicle_running_cost"] = pd.to_numeric(
-            df.get("vehicle_running_cost", 0),
-            errors="coerce"
-        ).fillna(0)
-
-        running_cost = df["vehicle_running_cost"].sum()
-
-        # -----------------------------
-        # MAIN VALUES
-        # -----------------------------
-        driver_salary = df["driver_salary"].sum()
-        platform_fee = df["platform_fee"].sum()
-        total_revenue = df["fare"].sum()
-
-        total_cost = (
-            driver_salary
-            + platform_fee
-            + running_cost
-            + vehicle_expense_total
-        )
-
-        net_profit = total_revenue - total_cost
-
-        # -----------------------------
-        # FIX NEGATIVE / ZERO VALUES
-        # -----------------------------
-        display_profit = net_profit if net_profit > 0 else 0
-
-        pie_data = pd.DataFrame({
-            "Category": [
-                "Driver Salary",
-                "Platform Fee",
-                "Running Cost",
-                "Vehicle Expenses",
-                "Profit"
-            ],
-            "Amount": [
-                driver_salary,
-                platform_fee,
-                running_cost,
-                vehicle_expense_total,
-                display_profit
-            ]
-        })
-
-        # -----------------------------
-        # PIE CHART
-        # -----------------------------
-        fig_pie = px.pie(
-            pie_data,
-            names="Category",
-            values="Amount",
-            hole=0.4
-        )
-
-        st.plotly_chart(fig_pie, use_container_width=True)
-
-        st.markdown("---")
-        st.subheader("Net Profit by Vehicle")
-
-        # ---------------------------------
-        # PREPARE DATA
-        # ---------------------------------
-        df_vehicle = df.copy()
-
-        # Ensure numeric
-        cols = ["fare", "driver_salary", "platform_fee", "vehicle_running_cost", "tip", "toll_fee"]
-        for c in cols:
-            if c in df_vehicle.columns:
-                df_vehicle[c] = pd.to_numeric(df_vehicle[c], errors="coerce").fillna(0)
-
-        # ---------------------------------
-        # LOAD VEHICLE EXPENSES
-        # ---------------------------------
-        vehicle_expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
-
-        if not vehicle_expense_df.empty:
-            vehicle_expense_df["amount"] = pd.to_numeric(
-                vehicle_expense_df["amount"],
-                errors="coerce"
-            ).fillna(0)
-
-        # ---------------------------------
-        # GROUP VEHICLE DATA
-        # ---------------------------------
-        vehicle_summary = df_vehicle.groupby("vehicle_no").agg({
-            "fare": "sum",
-            "driver_salary": "sum",
-            "platform_fee": "sum",
-            "vehicle_running_cost": "sum",
-            "tip": "sum",
-            "toll_fee": "sum"
-        }).reset_index()
-
-        # ---------------------------------
-        # ADD VEHICLE EXPENSES (REPAIRS)
-        # ---------------------------------
-        if not vehicle_expense_df.empty:
-
-            vehicle_expense_summary = (
-                vehicle_expense_df.groupby("vehicle_no")["amount"]
-                .sum()
-                .reset_index()
-                .rename(columns={"amount": "vehicle_expense"})
-            )
-
-            vehicle_summary = vehicle_summary.merge(
-                vehicle_expense_summary,
-                on="vehicle_no",
-                how="left"
-            )
-
-            vehicle_summary["vehicle_expense"] = vehicle_summary["vehicle_expense"].fillna(0)
-
-        else:
-            vehicle_summary["vehicle_expense"] = 0
-
-        # ---------------------------------
-        # CALCULATE REAL DRIVER COST
-        # ---------------------------------
-        vehicle_summary["real_driver_cost"] = (
-            vehicle_summary["driver_salary"]
-            + vehicle_summary["tip"]
-            + vehicle_summary["toll_fee"]
-        )
-
-        # ---------------------------------
-        # TOTAL COST PER VEHICLE
-        # ---------------------------------
-        vehicle_summary["total_cost"] = (
-            vehicle_summary["real_driver_cost"]
-            + vehicle_summary["platform_fee"]
-            + vehicle_summary["vehicle_running_cost"]
-            + vehicle_summary["vehicle_expense"]
-        )
-
-        # ---------------------------------
-        # NET PROFIT PER VEHICLE
-        # ---------------------------------
-        vehicle_summary["net_profit"] = (
-            vehicle_summary["fare"] - vehicle_summary["total_cost"]
-        )
-
-        # ---------------------------------
-        # DISPLAY TABLE
-        # ---------------------------------
-        display_df = vehicle_summary[["vehicle_no", "net_profit"]].rename(
-            columns={
-                "vehicle_no": "Vehicle",
-                "net_profit": "Net Profit (Rs.)"
-            }
-        )
-
-        st.dataframe(display_df)
-
-        # ---------------------------------
-        # TOTAL PROFIT
-        # ---------------------------------
-        total_vehicle_profit = vehicle_summary["net_profit"].sum()
-
-        st.success(f"💰 Total Net Profit (All Vehicles): Rs {total_vehicle_profit:,.0f}")
-    # =====================================================
-    # TAB 2 — VEHICLE PERFORMANCE
-    # =====================================================
-    with tab2:
-
-        df["vehicle_running_cost"] = pd.to_numeric(
-            df.get("vehicle_running_cost", 0),
-            errors="coerce"
-        ).fillna(0)
-    
-        vehicle_summary = df.groupby("vehicle_no").agg({
-            "fare": "sum",
-            "driver_salary": "sum",
-            "toll_fee": "sum",
-            "tip": "sum",
-            "platform_fee": "sum",
-            "daily_mileage": "sum",
-            "vehicle_running_cost": "sum"
-        }).reset_index()
-    
-        vehicle_summary["real_driver_cost"] = (
-            vehicle_summary["driver_salary"]
-            + vehicle_summary["tip"]
-        )
-    
-        vehicle_summary["total_cost"] = (
-            vehicle_summary["real_driver_cost"]
-            + vehicle_summary["platform_fee"]
-            + vehicle_summary["vehicle_running_cost"]
-        )
-    
-        vehicle_summary["net_profit"] = (
-            vehicle_summary["fare"]
-            - vehicle_summary["total_cost"]
-        )
-    
-        st.dataframe(vehicle_summary)
-    # =====================================================
-    # TAB 3 — EXPENSE INSIGHTS
-    # =====================================================
-    with tab3:
-
-        total_salary = df["driver_salary"].sum()
-        total_platform = df["platform_fee"].sum()
-        total_mileage = df["daily_mileage"].sum()
-        # Load cost per km
-        df["vehicle_running_cost"] = pd.to_numeric(
-            df.get("vehicle_running_cost", 0),
-            errors="coerce"
-        ).fillna(0)
-
-        running_cost = df["vehicle_running_cost"].sum()
-
-        expense_data = pd.DataFrame({
-            "Category": ["Driver Salary", "Platform Fee", "Running Cost"],
-            "Amount": [total_salary, total_platform, running_cost]
-        })
-
-        fig3 = px.pie(
-            expense_data,
-            names="Category",
-            values="Amount",
-            title="Expense Breakdown"
-        )
-
-        st.plotly_chart(fig3, use_container_width=True)
-
-    # =====================================================
-    # TAB 4 — VEHICLE DETAILS
-    # =====================================================
-    with tab4:
-
-        st.subheader("🚗 Fleet Maintenance & Leasing Overview")
-
-        vehicle_data = get_vehicle_service_data()
-
-        if vehicle_data.empty:
-            st.warning("No vehicle data available.")
-            st.stop()
-
-        today = datetime.today().date()
-        cols = st.columns(2)
-
-        for i, row in vehicle_data.iterrows():
-
-            col = cols[i % 2]
-
-            with col:
-
-                current_mileage = row["current_mileage"]
-
-                if current_mileage >= row["next_alignment"]:
-                    alignment_status = "🔴 OVERDUE"
-                elif current_mileage >= row["next_alignment"] - 500:
-                    alignment_status = "🟡 Due Soon"
-                else:
-                    alignment_status = "🟢 OK"
-
-                if current_mileage >= row["next_air_filter"]:
-                    air_status = "🔴 OVERDUE"
-                elif current_mileage >= row["next_air_filter"] - 1000:
-                    air_status = "🟡 Due Soon"
-                else:
-                    air_status = "🟢 OK"
-
-                # ---------------------------------
-                # LOAD LEASING EXPENSE DATA
-                # ---------------------------------
-                expense_df = pd.DataFrame(
-                    vehicle_variable_sheet.get_all_records()
-                )
-                
-                paid_installments = 0
-                
-                if not expense_df.empty:
-                
-                    # Clean required columns
-                    expense_df["vehicle_no_clean"] = (
-                        expense_df["vehicle_no"]
-                        .astype(str)
-                        .str.replace("-", "", regex=False)
-                        .str.replace(" ", "", regex=False)
-                        .str.upper()
-                        .str.strip()
-                    )
-                
-                    expense_df["category_clean"] = (
-                        expense_df["category"]
-                        .astype(str)
-                        .str.lower()
-                        .str.strip()
-                    )
-                
-                    expense_df["description"] = (
-                        expense_df["description"]
-                        .astype(str)
-                        .str.strip()
-                    )
-                
-                    current_vehicle_clean = (
-                        str(row["vehicle_no"])
-                        .replace("-", "")
-                        .replace(" ", "")
-                        .upper()
-                        .strip()
-                    )
-                
-                    # Filter leasing payments for the selected vehicle
-                    lease_df = expense_df[
-                        (expense_df["vehicle_no_clean"] == current_vehicle_clean)
-                        & (expense_df["category_clean"] == "leasing")
-                    ].copy()
-                
-                    if not lease_df.empty:
-                
-                        # Extract the instalment number from:
-                        # Installment 1
-                        # installment 2
-                        # Instalment 10
-                        # installemnt 5
-                        lease_df["installment_no"] = (
-                            lease_df["description"]
-                            .str.extract(
-                                r"(?i)(?:installment|instalment|installemnt)\s*[-:#]?\s*(\d+)",
-                                expand=False
-                            )
-                        )
-                
-                        lease_df["installment_no"] = pd.to_numeric(
-                            lease_df["installment_no"],
-                            errors="coerce"
-                        )
-                
-                        valid_installments = lease_df["installment_no"].dropna()
-                
-                        if not valid_installments.empty:
-                            paid_installments = int(valid_installments.max())
-                
-                # ---------------------------------
-                # CALCULATE REMAINING
-                # ---------------------------------
-                total_installments = int(
-                    num(row.get("lease_total_installments", 0))
-                )
-                
-                installment_amount = num(
-                    row.get("lease_installment_amount", 0)
-                )
-                
-                # Ensure paid installments is a valid integer
-                paid_installments = int(num(paid_installments))
-                
-                # Prevent paid installments exceeding total installments
-                paid_installments = min(
-                    paid_installments,
-                    total_installments
-                )
-                
-                remaining_installments = max(
-                    0,
-                    total_installments - paid_installments
-                )
-                
-                remaining_balance = (
-                    remaining_installments * installment_amount
-                )
-                
-                license_date = pd.to_datetime(
-                    row["license_renewal_date"]
-                ).date()
-                
-                insurance_date = pd.to_datetime(
-                    row["insurance_renewal_date"]
-                ).date()
-                
-                license_days = (license_date - today).days
-                insurance_days = (insurance_date - today).days
-                
-                st.markdown(f"""
-                ### 🚗 {row['vehicle_no']}
-                
-                📍 Current Mileage: {int(current_mileage):,} km  
-                
-                🛞 Next Wheel Alignment: {int(row['next_alignment']):,} km  
-                Status: {alignment_status}  
-                
-                🌬 Next Air Filter: {int(row['next_air_filter']):,} km  
-                Status: {air_status}  
-                
-                ---
-                
-                🗓 License Renewal: {license_date}  
-                ⏳ Days Remaining: {license_days}
-                
-                🛡 Insurance Renewal: {insurance_date}  
-                ⏳ Days Remaining: {insurance_days}
-                
-                ---
-                
-                💳 Monthly Lease Installment: Rs. {installment_amount:,.0f}  
-                ✅ Paid Installments: {paid_installments}  
-                📦 Total Installments: {total_installments}  
-                ⏳ Remaining Installments: {remaining_installments}  
-                💰 Remaining Balance: Rs. {remaining_balance:,.0f}
-                
-                ---
-                """)
+    st.markdown('<div class="ck-dashboard-footer">© 2026 CEEKAY TOURS. Management Console.</div>', unsafe_allow_html=True)
 
 def page_admin_daily_profit():
 
@@ -1704,8 +1294,7 @@ def page_admin_monthly_profit():
 # -------------------------------------------------------------------
 def page_profit_reports():
 
-    st.markdown("<h2>📈 Profit Reports</h2>", unsafe_allow_html=True)
-
+    # Main page heading is rendered centrally by the application shell.
     mode = st.selectbox(
         "Select Report Type",
         ["Daily Profit", "Range Profit", "Monthly Profit"]
@@ -1720,8 +1309,7 @@ def page_profit_reports():
 
 def page_vehicle_report():
 
-    st.markdown("<h2>🚗 Vehicle Financial Report</h2>", unsafe_allow_html=True)
-
+    # Main page heading is rendered centrally by the application shell.
     vehicles = drivers_df["vehicle_no"].unique().tolist()
     selected_vehicle = st.selectbox("Select Vehicle", vehicles)
 
@@ -1843,8 +1431,7 @@ def num(v):
 
 def page_vehicle_entry():
 
-    st.markdown("<h2>🛠 Vehicle Management</h2>", unsafe_allow_html=True)
-
+    # Main page heading is rendered centrally by the application shell.
     tab1, tab2 = st.tabs([
         "➕ Add Vehicle",
         "💰 Add Expense"
@@ -2026,16 +1613,7 @@ def page_admin_submissions():
 # -------------------------------------------------------------------
 def page_admin_daily_entry():
 
-    st.markdown(
-        """
-        <div class="ck-page-header">
-            <h2>Daily Entry</h2>
-            <p>Add a driver's daily trip record directly from the admin account.</p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
+    # Main page heading/subtitle are rendered centrally by the application shell.
     drivers_current = pd.DataFrame(drivers_sheet.get_all_records())
 
     if drivers_current.empty or "driver_name" not in drivers_current.columns:

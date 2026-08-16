@@ -116,6 +116,11 @@ drivers_sheet = file.worksheet("drivers")
 daily_sheet = file.worksheet("daily_reports")
 vehicle_master_sheet = file.worksheet("vehicle_master")
 vehicle_variable_sheet = file.worksheet("vehicle_variable_costs")
+try:
+    monthly_cash_flow_sheet = file.worksheet("monthly_cash_flow")
+except gspread.WorksheetNotFound:
+    monthly_cash_flow_sheet = file.add_worksheet(title="monthly_cash_flow", rows=200, cols=4)
+    monthly_cash_flow_sheet.append_row(["month", "electricity_bill", "updated_at", "note"])
 
 drivers_df = pd.DataFrame(drivers_sheet.get_all_records())
 
@@ -155,8 +160,8 @@ def sidebar_menu(user_type=None):
         render_centered_logo(145)
         st.markdown('<div class="ck-side-brand"><b>CEEKAY TOURS</b><span>Management Console</span></div>', unsafe_allow_html=True)
         st.divider()
-        icons={"Dashboard":"▦","Daily Entry":"＋","Profit Reports":"↗","Vehicle Entry":"⚙","Vehicle Report":"◉","Logout":"↪"}
-        page=st.radio("Navigation",["Dashboard","Daily Entry","Profit Reports","Vehicle Entry","Vehicle Report","Logout"],format_func=lambda x:f"{icons[x]}   {x}",label_visibility="collapsed")
+        icons={"Dashboard":"▦","Daily Entry":"＋","Profit Reports":"↗","Monthly Cash Flow":"↕","Vehicle Entry":"⚙","Vehicle Report":"◉","Logout":"↪"}
+        page=st.radio("Navigation",["Dashboard","Daily Entry","Profit Reports","Monthly Cash Flow","Vehicle Entry","Vehicle Report","Logout"],format_func=lambda x:f"{icons[x]}   {x}",label_visibility="collapsed")
         st.divider()
         st.caption("CEEKAY Tours • Admin Workspace")
         return page
@@ -1973,6 +1978,126 @@ def page_admin_daily_entry():
     st.rerun()
 
 
+
+# -------------------------------------------------------------------
+# MONTHLY CASH FLOW
+# -------------------------------------------------------------------
+def page_monthly_cash_flow():
+    reports = pd.DataFrame(daily_sheet.get_all_records())
+
+    if reports.empty:
+        st.info("No daily reports are available yet.")
+        return
+
+    reports = reports.copy()
+    if "status" in reports.columns:
+        reports = reports[reports["status"].astype(str).str.lower() == "correct"]
+
+    reports["date"] = pd.to_datetime(reports.get("date"), errors="coerce")
+    reports = reports.dropna(subset=["date"])
+    if reports.empty:
+        st.info("No valid dated reports are available.")
+        return
+
+    reports["fare"] = pd.to_numeric(reports.get("fare", 0), errors="coerce").fillna(0)
+
+    # Use the actual total driver payable already stored by the daily-entry logic.
+    if "total_driver_salary" in reports.columns:
+        reports["driver_payable"] = pd.to_numeric(reports["total_driver_salary"], errors="coerce").fillna(0)
+    else:
+        salary = pd.to_numeric(reports.get("driver_salary", 0), errors="coerce").fillna(0)
+        toll = pd.to_numeric(reports.get("toll_fee", 0), errors="coerce").fillna(0)
+        tip = pd.to_numeric(reports.get("tip", 0), errors="coerce").fillna(0)
+        reports["driver_payable"] = salary + toll + tip
+
+    reports["month"] = reports["date"].dt.strftime("%Y-%m")
+    monthly = reports.groupby("month", as_index=False).agg(
+        monthly_revenue=("fare", "sum"),
+        driver_payable=("driver_payable", "sum"),
+    )
+    monthly["cash_before_electricity"] = monthly["monthly_revenue"] - monthly["driver_payable"]
+
+    elec = pd.DataFrame(monthly_cash_flow_sheet.get_all_records())
+    if elec.empty:
+        elec = pd.DataFrame(columns=["month", "electricity_bill", "updated_at", "note"])
+    if "electricity_bill" not in elec.columns:
+        elec["electricity_bill"] = 0
+    elec["electricity_bill"] = pd.to_numeric(elec["electricity_bill"], errors="coerce").fillna(0)
+    elec["month"] = elec.get("month", "").astype(str)
+
+    monthly = monthly.merge(elec[["month", "electricity_bill"]], on="month", how="left")
+    monthly["electricity_bill"] = monthly["electricity_bill"].fillna(0)
+    monthly["real_cash_flow"] = monthly["cash_before_electricity"] - monthly["electricity_bill"]
+    monthly = monthly.sort_values("month")
+
+    st.markdown("### Add / Update Electricity Bill")
+    month_options = sorted(monthly["month"].unique().tolist(), reverse=True)
+    selected_month = st.selectbox("Month", month_options, key="cashflow_bill_month")
+    current_bill = float(monthly.loc[monthly["month"] == selected_month, "electricity_bill"].iloc[0])
+    bill_raw = st.text_input(
+        "Electricity Bill (Rs.)",
+        value="" if current_bill == 0 else f"{current_bill:g}",
+        placeholder="Enter monthly electricity bill",
+        key="cashflow_electricity_bill",
+    )
+    note = st.text_input("Note", placeholder="Optional", key="cashflow_note")
+
+    if st.button("Save Electricity Bill", use_container_width=True, key="save_cashflow_bill"):
+        try:
+            bill = float(str(bill_raw).replace(",", "").strip() or 0)
+            if bill < 0:
+                raise ValueError
+        except ValueError:
+            st.error("Please enter a valid electricity bill amount.")
+            return
+
+        values = monthly_cash_flow_sheet.get_all_values()
+        row_to_update = None
+        for idx, row in enumerate(values[1:], start=2):
+            if row and str(row[0]).strip() == selected_month:
+                row_to_update = idx
+                break
+        now_txt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if row_to_update:
+            monthly_cash_flow_sheet.update(f"A{row_to_update}:D{row_to_update}", [[selected_month, bill, now_txt, note]])
+        else:
+            monthly_cash_flow_sheet.append_row([selected_month, bill, now_txt, note])
+        st.success(f"Electricity bill saved for {selected_month}.")
+        st.rerun()
+
+    st.markdown("---")
+    latest = monthly.iloc[-1]
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Monthly Revenue", f"Rs. {latest['monthly_revenue']:,.2f}")
+    c2.metric("Driver Payable", f"Rs. {latest['driver_payable']:,.2f}")
+    c3.metric("Electricity Bill", f"Rs. {latest['electricity_bill']:,.2f}")
+    c4.metric("Real Cash Flow", f"Rs. {latest['real_cash_flow']:,.2f}")
+    st.caption(f"Latest month shown: {latest['month']}")
+
+    st.markdown("### Monthly Cash Flow Trend")
+    chart_df = monthly.copy()
+    fig = px.line(
+        chart_df, x="month", y="real_cash_flow", markers=True,
+        labels={"month": "Month", "real_cash_flow": "Real Cash Flow (Rs.)"},
+        title="Real Monthly Cash Flow"
+    )
+    fig.update_layout(margin=dict(l=10, r=10, t=50, b=10), separators=".,")
+    fig.update_yaxes(tickformat=",.0f")
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("### Monthly Cash Flow Details")
+    display = monthly.rename(columns={
+        "month": "Month",
+        "monthly_revenue": "Monthly Revenue",
+        "driver_payable": "Driver Payable",
+        "cash_before_electricity": "Cash Flow Before Electricity",
+        "electricity_bill": "Electricity Bill",
+        "real_cash_flow": "Real Cash Flow",
+    })
+    for col in ["Monthly Revenue", "Driver Payable", "Cash Flow Before Electricity", "Electricity Bill", "Real Cash Flow"]:
+        display[col] = display[col].map(lambda x: f"{x:,.2f}")
+    st.dataframe(display, use_container_width=True, hide_index=True)
+
 # -------------------------------------------------------------------
 # MAIN APP — SINGLE ADMIN ACCOUNT
 # -------------------------------------------------------------------
@@ -2001,6 +2126,7 @@ else:
       "Dashboard":("Business Dashboard","Revenue, profitability, mileage and fleet health at a glance."),
       "Daily Entry":("Daily Operations","Record driver and trip income directly from the admin workspace."),
       "Profit Reports":("Profit Reports","Review daily, date-range and monthly business performance."),
+      "Monthly Cash Flow":("Monthly Cash Flow","Track monthly cash available after driver payments and electricity."),
       "Vehicle Entry":("Vehicle Costs & Service","Maintain vehicle master data, running costs and service expenses."),
       "Vehicle Report":("Vehicle Report","Review vehicle-level income, expenses, mileage and profitability.")
     }
@@ -2010,6 +2136,7 @@ else:
     if page=="Dashboard": page_admin_dashboard()
     elif page=="Daily Entry": page_admin_daily_entry()
     elif page=="Profit Reports": page_profit_reports()
+    elif page=="Monthly Cash Flow": page_monthly_cash_flow()
     elif page=="Vehicle Entry": page_vehicle_entry()
     elif page=="Vehicle Report": page_vehicle_report()
     elif page=="Logout":

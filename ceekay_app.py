@@ -1008,14 +1008,58 @@ def page_admin_dashboard():
         annotations=[dict(text=f"<b>{profit_pct:.0f}%</b><br>Profit", x=.5,y=.5,font_size=20,showarrow=False,font_color="#0f172a")]
     )
 
+    # Vehicle financial summary uses the SAME cost components as Vehicle Report.
+    # Dashboard date filter applies to revenue/daily operating values. Existing vehicle
+    # variable expenses and monthly depreciation follow the Vehicle Report logic.
     vehicle_summary = filtered.groupby("vehicle_no", as_index=False).agg(
-        fare=("fare", "sum"), driver_salary=("driver_salary", "sum"),
-        platform_fee=("platform_fee", "sum"), vehicle_running_cost=("vehicle_running_cost", "sum")
+        fare=("fare", "sum"),
+        driver_salary=("driver_salary", "sum"),
+        toll_fee=("toll_fee", "sum"),
+        tip=("tip", "sum"),
+        platform_fee=("platform_fee", "sum"),
+        daily_mileage=("daily_mileage", "sum"),
     )
-    vehicle_summary["net_profit"] = vehicle_summary["fare"] - (
-        vehicle_summary["driver_salary"] + vehicle_summary["platform_fee"] + vehicle_summary["vehicle_running_cost"]
-    )
-    vehicle_summary = vehicle_summary.sort_values("net_profit", ascending=False)
+
+    variable_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+    if not variable_df.empty:
+        variable_df["amount"] = pd.to_numeric(variable_df.get("amount", 0), errors="coerce").fillna(0)
+    master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
+
+    vehicle_rows = []
+    for _, vr in vehicle_summary.iterrows():
+        vehicle_no = vr["vehicle_no"]
+        total_revenue_v = float(vr["fare"])
+        driver_cost_v = float(vr["driver_salary"] + vr["toll_fee"] + vr["tip"])
+        platform_fee_v = float(vr["platform_fee"])
+
+        master_match = master_df[master_df["vehicle_no"] == vehicle_no] if not master_df.empty and "vehicle_no" in master_df.columns else pd.DataFrame()
+        if not master_match.empty:
+            purchase_cost_v = num(master_match.iloc[0].get("purchase_cost", 0))
+            useful_years_v = num(master_match.iloc[0].get("useful_years", 0))
+            cost_per_km_v = num(master_match.iloc[0].get("cost_per_km", 0))
+            monthly_depreciation_v = purchase_cost_v / (useful_years_v * 12) if useful_years_v > 0 else 0.0
+        else:
+            cost_per_km_v = 0.0
+            monthly_depreciation_v = 0.0
+
+        running_cost_v = float(vr["daily_mileage"]) * cost_per_km_v
+        if not variable_df.empty and "vehicle_no" in variable_df.columns:
+            variable_cost_v = float(variable_df.loc[variable_df["vehicle_no"] == vehicle_no, "amount"].sum())
+        else:
+            variable_cost_v = 0.0
+
+        total_cost_v = driver_cost_v + platform_fee_v + running_cost_v + variable_cost_v + monthly_depreciation_v
+        net_profit_v = total_revenue_v - total_cost_v
+        vehicle_rows.append({
+            "vehicle_no": vehicle_no,
+            "revenue": total_revenue_v,
+            "total_cost": total_cost_v,
+            "net_profit": net_profit_v,
+        })
+
+    vehicle_summary = pd.DataFrame(vehicle_rows)
+    if not vehicle_summary.empty:
+        vehicle_summary = vehicle_summary.sort_values("net_profit", ascending=False)
 
     c1, c2, c3 = st.columns([1.7, 1.0, 1.25])
     with c1:
@@ -1030,11 +1074,16 @@ def page_admin_dashboard():
             st.caption("No vehicle data available.")
         else:
             for rank, (_, row) in enumerate(vehicle_summary.head(5).iterrows(), start=1):
-                value = private(f"Rs. {row['net_profit']:,.0f}")
+                revenue_value = private(f"Rs. {row['revenue']:,.0f}")
+                cost_value = private(f"Rs. {row['total_cost']:,.0f}")
+                profit_value = private(f"Rs. {row['net_profit']:,.0f}")
                 st.markdown(
                     f'''<div class="ck-rank-row"><div class="ck-rank-no">{rank}</div>
-                    <div class="ck-rank-main"><b>{row['vehicle_no']}</b><span>Vehicle profit</span></div>
-                    <div class="ck-rank-value">{value}</div></div>''', unsafe_allow_html=True)
+                    <div class="ck-rank-main"><b>{row['vehicle_no']}</b>
+                    <span>Revenue: {revenue_value} &nbsp; | &nbsp; Cost: {cost_value}</span></div>
+                    <div class="ck-rank-value"><span style="font-size:.68rem;color:#64748b;display:block;">NET PROFIT</span>{profit_value}</div></div>''',
+                    unsafe_allow_html=True,
+                )
 
     expense_df = pd.DataFrame({
         "Category": ["Vehicle Running Costs", "Driver Salary", "Platform Fee"],

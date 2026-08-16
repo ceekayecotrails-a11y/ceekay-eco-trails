@@ -57,6 +57,24 @@ st.markdown("""<style>
 .ck-login-note{background:#f1f5f9;border-radius:13px;padding:12px;color:#475569!important;font-size:.88rem;margin-top:.7rem;}
 </style>""",unsafe_allow_html=True)
 
+
+
+def render_centered_logo(width=130):
+    """Render logo with true HTML centering (works in login and sidebar)."""
+    logo_path = Path("logo.png")
+    if logo_path.exists():
+        encoded = base64.b64encode(logo_path.read_bytes()).decode("utf-8")
+        st.markdown(
+            f"""
+            <div style="width:100%;display:flex;justify-content:center;align-items:center;text-align:center;margin:0 auto 18px auto;">
+                <img src="data:image/png;base64,{encoded}" style="display:block;width:{width}px;max-width:100%;height:auto;margin:0 auto;object-fit:contain;">
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        return True
+    return False
+
 # -------------------------------------------------------------------
 # GOOGLE SHEET CONNECTION (SAFE VERSION)
 # -------------------------------------------------------------------
@@ -117,10 +135,7 @@ def driver_auth(username, password):
 # -------------------------------------------------------------------
 def sidebar_menu(user_type=None):
     with st.sidebar:
-        if Path("logo.png").exists():
-            st.markdown('<div class="ck-logo-center">', unsafe_allow_html=True)
-            st.image("logo.png", width=130)
-            st.markdown('</div>', unsafe_allow_html=True)
+        render_centered_logo(145)
         st.markdown('<div class="ck-side-brand"><b>CEEKAY TOURS</b><span>Management Console</span></div>', unsafe_allow_html=True)
         st.divider()
         icons={"Dashboard":"▦","Daily Entry":"＋","Profit Reports":"↗","Vehicle Entry":"⚙","Vehicle Report":"◉","Logout":"↪"}
@@ -857,16 +872,8 @@ def get_vehicle_service_data():
 # -------------------------------------------------------------------
 def page_admin_dashboard():
 
-    st.markdown(
-        """
-        <div class="ck-page-header">
-            <h2>CEEKAY Executive Dashboard</h2>
-            <p>Revenue, fleet performance, expenses and service status in one place.</p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
+    # Page title is rendered once by the main navigation header.
+    # Avoid a second dashboard heading inside this page.
     df = pd.DataFrame(daily_sheet.get_all_records())
     df = df[df["status"] == "Correct"]
 
@@ -2178,11 +2185,7 @@ if not st.session_state.is_admin_logged:
     left, center, right = st.columns([1, 1.05, 1])
     with center:
         with st.container(border=True):
-            if Path("logo.png").exists():
-                st.markdown('<div class="ck-logo-center">', unsafe_allow_html=True)
-                st.image("logo.png", width=120)
-                st.markdown('</div>', unsafe_allow_html=True)
-            else:
+            if not render_centered_logo(140):
                 st.markdown('<div class="login-logo">CT</div>', unsafe_allow_html=True)
             st.markdown('<div class="login-name" style="text-align:center">CEEKAY Tours</div><div class="login-sub" style="text-align:center">Business Management Console<br>Administrator Access</div>', unsafe_allow_html=True)
             username=st.text_input("Username",placeholder="Enter username",key="admin_login_username")

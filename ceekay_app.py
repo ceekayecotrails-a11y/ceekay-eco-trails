@@ -35,6 +35,9 @@ st.markdown(
     div.stButton > button, div[data-testid="stFormSubmitButton"] button {border-radius:12px;min-height:44px;font-weight:650;}
     div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, textarea {border-radius:12px !important;}
     .login-logo {width:86px;height:86px;border-radius:24px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:2.25rem;background:linear-gradient(135deg,#2563eb,#0f766e);}
+    .ck-logo-center [data-testid="stImage"] {display:flex !important;justify-content:center !important;align-items:center !important;width:100% !important;}
+    .ck-logo-center [data-testid="stImage"] img {display:block !important;margin:0 auto !important;object-fit:contain !important;}
+    [data-testid="stSidebar"] .ck-logo-center + div {text-align:center;}
     .login-name {font-size:2rem;font-weight:780;line-height:1.25;color:#0f172a;}
     .login-sub {color:#64748b;margin:.35rem 0 1.1rem;}
     .login-note {background:#f1f5f9;border-radius:13px;padding:12px;color:#475569;font-size:.88rem;}
@@ -115,7 +118,9 @@ def driver_auth(username, password):
 def sidebar_menu(user_type=None):
     with st.sidebar:
         if Path("logo.png").exists():
+            st.markdown('<div class="ck-logo-center">', unsafe_allow_html=True)
             st.image("logo.png", width=130)
+            st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('<div class="ck-side-brand"><b>CEEKAY TOURS</b><span>Management Console</span></div>', unsafe_allow_html=True)
         st.divider()
         icons={"Dashboard":"▦","Daily Entry":"＋","Profit Reports":"↗","Vehicle Entry":"⚙","Vehicle Report":"◉","Logout":"↪"}
@@ -2174,7 +2179,9 @@ if not st.session_state.is_admin_logged:
     with center:
         with st.container(border=True):
             if Path("logo.png").exists():
+                st.markdown('<div class="ck-logo-center">', unsafe_allow_html=True)
                 st.image("logo.png", width=120)
+                st.markdown('</div>', unsafe_allow_html=True)
             else:
                 st.markdown('<div class="login-logo">CT</div>', unsafe_allow_html=True)
             st.markdown('<div class="login-name" style="text-align:center">CEEKAY Tours</div><div class="login-sub" style="text-align:center">Business Management Console<br>Administrator Access</div>', unsafe_allow_html=True)

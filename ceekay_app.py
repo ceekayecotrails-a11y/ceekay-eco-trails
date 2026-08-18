@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import plotly.express as px
 import gspread
@@ -115,6 +116,11 @@ drivers_sheet = file.worksheet("drivers")
 daily_sheet = file.worksheet("daily_reports")
 vehicle_master_sheet = file.worksheet("vehicle_master")
 vehicle_variable_sheet = file.worksheet("vehicle_variable_costs")
+try:
+    monthly_cash_flow_sheet = file.worksheet("monthly_cash_flow")
+except gspread.WorksheetNotFound:
+    monthly_cash_flow_sheet = file.add_worksheet(title="monthly_cash_flow", rows=200, cols=4)
+    monthly_cash_flow_sheet.append_row(["month", "electricity_bill", "updated_at", "note"])
 
 drivers_df = pd.DataFrame(drivers_sheet.get_all_records())
 
@@ -154,8 +160,8 @@ def sidebar_menu(user_type=None):
         render_centered_logo(145)
         st.markdown('<div class="ck-side-brand"><b>CEEKAY TOURS</b><span>Management Console</span></div>', unsafe_allow_html=True)
         st.divider()
-        icons={"Dashboard":"▦","Daily Entry":"＋","Profit Reports":"↗","Vehicle Entry":"⚙","Vehicle Report":"◉","Logout":"↪"}
-        page=st.radio("Navigation",["Dashboard","Daily Entry","Profit Reports","Vehicle Entry","Vehicle Report","Logout"],format_func=lambda x:f"{icons[x]}   {x}",label_visibility="collapsed")
+        icons={"Dashboard":"▦","Daily Entry":"＋","Profit Reports":"↗","Monthly Cash Flow":"↕","Vehicle Entry":"⚙","Vehicle Report":"◉","Settings":"☷","Logout":"↪"}
+        page=st.radio("Navigation",["Dashboard","Daily Entry","Profit Reports","Monthly Cash Flow","Vehicle Entry","Vehicle Report","Settings","Logout"],format_func=lambda x:f"{icons[x]}   {x}",label_visibility="collapsed")
         st.divider()
         st.caption("CEEKAY Tours • Admin Workspace")
         return page
@@ -920,6 +926,21 @@ def page_admin_dashboard():
         st.session_state.show_overview_figures = False
 
     top_left, top_mid, top_right = st.columns([4.4, 1.0, 2.6])
+    with top_left:
+        vehicle_options = ["All Vehicles"]
+        if "vehicle_no" in df.columns:
+            vehicle_options.extend(sorted({
+                str(vehicle).strip()
+                for vehicle in df["vehicle_no"].dropna().tolist()
+                if str(vehicle).strip()
+            }))
+        selected_vehicle = st.selectbox(
+            "Vehicle",
+            vehicle_options,
+            index=0,
+            key="dashboard_vehicle_filter"
+        )
+
     with top_mid:
         label = "Hide Figures" if st.session_state.show_overview_figures else "View Figures"
         if st.button(label, key="overview_figure_toggle", use_container_width=True):
@@ -930,37 +951,18 @@ def page_admin_dashboard():
         start_date = d1.date_input("From", df["date"].min().date(), key="dash_from")
         end_date = d2.date_input("To", df["date"].max().date(), key="dash_to")
 
-    # Date filter is applied first so the vehicle list reflects the selected period.
-    date_filtered = df[
+    filtered = df[
         (df["date"] >= pd.to_datetime(start_date)) &
         (df["date"] <= pd.to_datetime(end_date))
     ].copy()
 
-    if date_filtered.empty:
-        st.info("No records found for the selected date range.")
-        return
-
-    # Vehicle filter: default is ALL vehicles. Selecting a vehicle updates the
-    # complete dashboard (KPIs, charts, recent entries and vehicle ranking).
-    vehicle_options = ["All Vehicles"] + sorted(
-        date_filtered["vehicle_no"].dropna().astype(str).unique().tolist()
-    )
-    selected_vehicle = st.selectbox(
-        "Vehicle",
-        vehicle_options,
-        index=0,
-        key="dash_vehicle"
-    )
-
-    if selected_vehicle == "All Vehicles":
-        filtered = date_filtered.copy()
-    else:
-        filtered = date_filtered[
-            date_filtered["vehicle_no"].astype(str) == selected_vehicle
+    if selected_vehicle != "All Vehicles":
+        filtered = filtered[
+            filtered["vehicle_no"].astype(str).str.strip() == selected_vehicle
         ].copy()
 
     if filtered.empty:
-        st.info("No records found for the selected vehicle and date range.")
+        st.info("No records found for the selected date range.")
         return
 
     total_revenue = filtered["fare"].sum()
@@ -1032,14 +1034,58 @@ def page_admin_dashboard():
         annotations=[dict(text=f"<b>{profit_pct:.0f}%</b><br>Profit", x=.5,y=.5,font_size=20,showarrow=False,font_color="#0f172a")]
     )
 
+    # Vehicle financial summary uses the SAME cost components as Vehicle Report.
+    # Dashboard date filter applies to revenue/daily operating values. Existing vehicle
+    # variable expenses and monthly depreciation follow the Vehicle Report logic.
     vehicle_summary = filtered.groupby("vehicle_no", as_index=False).agg(
-        fare=("fare", "sum"), driver_salary=("driver_salary", "sum"),
-        platform_fee=("platform_fee", "sum"), vehicle_running_cost=("vehicle_running_cost", "sum")
+        fare=("fare", "sum"),
+        driver_salary=("driver_salary", "sum"),
+        toll_fee=("toll_fee", "sum"),
+        tip=("tip", "sum"),
+        platform_fee=("platform_fee", "sum"),
+        daily_mileage=("daily_mileage", "sum"),
     )
-    vehicle_summary["net_profit"] = vehicle_summary["fare"] - (
-        vehicle_summary["driver_salary"] + vehicle_summary["platform_fee"] + vehicle_summary["vehicle_running_cost"]
-    )
-    vehicle_summary = vehicle_summary.sort_values("net_profit", ascending=False)
+
+    variable_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+    if not variable_df.empty:
+        variable_df["amount"] = pd.to_numeric(variable_df.get("amount", 0), errors="coerce").fillna(0)
+    master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
+
+    vehicle_rows = []
+    for _, vr in vehicle_summary.iterrows():
+        vehicle_no = vr["vehicle_no"]
+        total_revenue_v = float(vr["fare"])
+        driver_cost_v = float(vr["driver_salary"] + vr["toll_fee"] + vr["tip"])
+        platform_fee_v = float(vr["platform_fee"])
+
+        master_match = master_df[master_df["vehicle_no"] == vehicle_no] if not master_df.empty and "vehicle_no" in master_df.columns else pd.DataFrame()
+        if not master_match.empty:
+            purchase_cost_v = num(master_match.iloc[0].get("purchase_cost", 0))
+            useful_years_v = num(master_match.iloc[0].get("useful_years", 0))
+            cost_per_km_v = num(master_match.iloc[0].get("cost_per_km", 0))
+            monthly_depreciation_v = purchase_cost_v / (useful_years_v * 12) if useful_years_v > 0 else 0.0
+        else:
+            cost_per_km_v = 0.0
+            monthly_depreciation_v = 0.0
+
+        running_cost_v = float(vr["daily_mileage"]) * cost_per_km_v
+        if not variable_df.empty and "vehicle_no" in variable_df.columns:
+            variable_cost_v = float(variable_df.loc[variable_df["vehicle_no"] == vehicle_no, "amount"].sum())
+        else:
+            variable_cost_v = 0.0
+
+        total_cost_v = driver_cost_v + platform_fee_v + running_cost_v + variable_cost_v + monthly_depreciation_v
+        net_profit_v = total_revenue_v - total_cost_v
+        vehicle_rows.append({
+            "vehicle_no": vehicle_no,
+            "revenue": total_revenue_v,
+            "total_cost": total_cost_v,
+            "net_profit": net_profit_v,
+        })
+
+    vehicle_summary = pd.DataFrame(vehicle_rows)
+    if not vehicle_summary.empty:
+        vehicle_summary = vehicle_summary.sort_values("net_profit", ascending=False)
 
     c1, c2, c3 = st.columns([1.7, 1.0, 1.25])
     with c1:
@@ -1054,11 +1100,16 @@ def page_admin_dashboard():
             st.caption("No vehicle data available.")
         else:
             for rank, (_, row) in enumerate(vehicle_summary.head(5).iterrows(), start=1):
-                value = private(f"Rs. {row['net_profit']:,.0f}")
+                revenue_value = private(f"Rs. {row['revenue']:,.0f}")
+                cost_value = private(f"Rs. {row['total_cost']:,.0f}")
+                profit_value = private(f"Rs. {row['net_profit']:,.0f}")
                 st.markdown(
                     f'''<div class="ck-rank-row"><div class="ck-rank-no">{rank}</div>
-                    <div class="ck-rank-main"><b>{row['vehicle_no']}</b><span>Vehicle profit</span></div>
-                    <div class="ck-rank-value">{value}</div></div>''', unsafe_allow_html=True)
+                    <div class="ck-rank-main"><b>{row['vehicle_no']}</b>
+                    <span>Revenue: {revenue_value} &nbsp; | &nbsp; Cost: {cost_value}</span></div>
+                    <div class="ck-rank-value"><span style="font-size:.68rem;color:#64748b;display:block;">NET PROFIT</span>{profit_value}</div></div>''',
+                    unsafe_allow_html=True,
+                )
 
     expense_df = pd.DataFrame({
         "Category": ["Vehicle Running Costs", "Driver Salary", "Platform Fee"],
@@ -1076,10 +1127,6 @@ def page_admin_dashboard():
 
     alerts = []
     vehicle_data = get_vehicle_service_data()
-    if selected_vehicle != "All Vehicles" and not vehicle_data.empty and "vehicle_no" in vehicle_data.columns:
-        vehicle_data = vehicle_data[
-            vehicle_data["vehicle_no"].astype(str) == selected_vehicle
-        ].copy()
     if not vehicle_data.empty:
         for _, row in vehicle_data.iterrows():
             current = row.get("current_mileage", 0)
@@ -1657,6 +1704,8 @@ def page_admin_daily_entry():
         return
 
     driver_names = drivers_current["driver_name"].tolist()
+
+    # Quick-entry header: driver first, vehicle is still taken automatically.
     selected_driver_name = st.selectbox("Driver", driver_names)
     selected_driver = drivers_current[
         drivers_current["driver_name"] == selected_driver_name
@@ -1667,60 +1716,225 @@ def page_admin_daily_entry():
 
     last_end_mileage = get_last_end_mileage(selected_driver_name)
 
-    with st.form("admin_daily_entry_form", clear_on_submit=True):
-        report_date = st.date_input("Select Date", value=date.today())
+    # A versioned form key clears fields only after a successful save.
+    if "daily_entry_form_version" not in st.session_state:
+        st.session_state.daily_entry_form_version = 0
+    form_version = st.session_state.daily_entry_form_version
 
-        c1, c2 = st.columns(2)
-        start_mileage = c1.number_input(
+    def clean_default_number(value):
+        """Show stored mileage cleanly without unnecessary .00."""
+        try:
+            value = float(value)
+            return str(int(value)) if value.is_integer() else str(value)
+        except Exception:
+            return str(value or "")
+
+    def parse_quick_number(raw_value, label, required=False):
+        """Blank optional fields become zero; required fields stay blank until entered."""
+        raw = str(raw_value or "").strip().replace(",", "")
+        if raw == "":
+            if required:
+                st.error(f"{label} is required.")
+                return None
+            return 0.0
+        try:
+            value = float(raw)
+        except ValueError:
+            st.error(f"Please enter a valid number for {label}.")
+            return None
+        if value < 0:
+            st.error(f"{label} cannot be negative.")
+            return None
+        return value
+
+    with st.form(f"admin_daily_entry_form_{form_version}", clear_on_submit=False):
+        # Compact keyboard-first layout. Text inputs are intentional: they can start
+        # truly blank, unlike number_input fields that display 0.00 by default.
+        report_date = st.date_input("Date", value=date.today())
+
+        st.markdown("#### Mileage")
+        m1, m2, m3 = st.columns(3)
+        start_mileage_raw = m1.text_input(
             "Start Mileage *",
-            min_value=0.0,
-            value=float(last_end_mileage),
-            step=1.0
+            value=clean_default_number(last_end_mileage),
+            placeholder="Start mileage",
+            key=f"daily_start_{form_version}",
         )
-        end_mileage = c2.number_input(
+        end_mileage_raw = m2.text_input(
             "End Mileage *",
-            min_value=0.0,
-            value=float(last_end_mileage),
-            step=1.0
+            value="",
+            placeholder="Enter end mileage",
+            key=f"daily_end_{form_version}",
         )
-
-        uber_hire_mileage = st.number_input(
+        uber_hire_mileage_raw = m3.text_input(
             "Uber Hire Mileage *",
-            min_value=0.0,
-            value=0.0,
-            step=0.01
+            value="",
+            placeholder="Enter hire mileage",
+            key=f"daily_uber_{form_version}",
         )
 
-        c3, c4 = st.columns(2)
-        fare = c3.number_input("Fare (Rs.) *", min_value=0.0, value=0.0, step=100.0)
-        cash_collected = c4.number_input("Cash Collected (Rs.) *", min_value=0.0, value=0.0, step=100.0)
+        st.markdown("#### Collection")
+        f1, f2 = st.columns(2)
+        fare_raw = f1.text_input(
+            "Fare (Rs.) *",
+            value="",
+            placeholder="Enter fare",
+            key=f"daily_fare_{form_version}",
+        )
+        cash_collected_raw = f2.text_input(
+            "Cash Collected (Rs.) *",
+            value="",
+            placeholder="Enter cash collected",
+            key=f"daily_cash_{form_version}",
+        )
 
-        c5, c6, c7 = st.columns(3)
-        tip = c5.number_input("Tip (Rs.)", min_value=0.0, value=0.0, step=50.0)
-        toll_fee = c6.number_input("Toll Fee (Rs.)", min_value=0.0, value=0.0, step=50.0)
-        other_expenses = c7.number_input("Other Expenses (Rs.)", min_value=0.0, value=0.0, step=50.0)
+        st.markdown("#### Additional Amounts")
+        a1, a2, a3 = st.columns(3)
+        tip_raw = a1.text_input(
+            "Tip (Rs.)",
+            value="",
+            placeholder="Optional",
+            key=f"daily_tip_{form_version}",
+        )
+        toll_fee_raw = a2.text_input(
+            "Toll Fee (Rs.)",
+            value="",
+            placeholder="Optional",
+            key=f"daily_toll_{form_version}",
+        )
+        other_expenses_raw = a3.text_input(
+            "Other Expenses (Rs.)",
+            value="",
+            placeholder="Optional",
+            key=f"daily_other_{form_version}",
+        )
 
-        c8, c9 = st.columns(2)
-        platform_fee = c8.number_input("Platform Fee (Rs.)", min_value=0.0, value=0.0, step=50.0)
-        bank_deposit = c9.number_input("Bank Deposit (Rs.)", min_value=0.0, value=0.0, step=50.0)
+        a4, a5 = st.columns(2)
+        platform_fee_raw = a4.text_input(
+            "Platform Fee (Rs.)",
+            value="",
+            placeholder="Optional",
+            key=f"daily_platform_{form_version}",
+        )
+        bank_deposit_raw = a5.text_input(
+            "Bank Deposit (Rs.)",
+            value="",
+            placeholder="Optional",
+            key=f"daily_bank_{form_version}",
+        )
 
-        admin_note = st.text_input("Note")
+        admin_note = st.text_input(
+            "Note",
+            value="",
+            placeholder="Optional note",
+            key=f"daily_note_{form_version}",
+        )
 
-        submitted = st.form_submit_button("Save Daily Entry", use_container_width=True)
+        st.caption("Blank optional amount fields are automatically treated as Rs. 0.00.")
 
-    if not submitted:
+        action1, action2 = st.columns(2)
+        calculate_clicked = action1.form_submit_button(
+            "Show Salary Calculation",
+            use_container_width=True
+        )
+        submitted = action2.form_submit_button(
+            "Save Daily Entry",
+            use_container_width=True
+        )
+
+    # Keyboard helper: Enter behaves like moving to the next visible field instead
+    # of prematurely submitting the Streamlit form. Tab continues to work normally.
+    components.html(
+        """
+        <script>
+        (function () {
+          const doc = window.parent.document;
+          const marker = 'data-ck-enter-next';
+          if (doc.body.getAttribute(marker) === '1') return;
+          doc.body.setAttribute(marker, '1');
+
+          doc.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter' || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+            const el = e.target;
+            if (!el || el.tagName !== 'INPUT') return;
+            if (el.type === 'submit' || el.type === 'button' || el.type === 'checkbox') return;
+
+            const fields = Array.from(doc.querySelectorAll('input')).filter(function (x) {
+              const r = x.getBoundingClientRect();
+              return !x.disabled && !x.readOnly && x.type !== 'hidden' &&
+                     x.type !== 'submit' && x.type !== 'button' &&
+                     r.width > 0 && r.height > 0;
+            });
+            const idx = fields.indexOf(el);
+            if (idx >= 0 && idx < fields.length - 1) {
+              e.preventDefault();
+              e.stopPropagation();
+              fields[idx + 1].focus();
+              if (typeof fields[idx + 1].select === 'function') fields[idx + 1].select();
+            }
+          }, true);
+        })();
+        </script>
+        """,
+        height=0,
+        width=0,
+    )
+
+    if not calculate_clicked and not submitted:
+        return
+
+    # Parse only when one of the two action buttons is clicked.
+    start_mileage = parse_quick_number(start_mileage_raw, "Start Mileage", required=True)
+    end_mileage = parse_quick_number(end_mileage_raw, "End Mileage", required=True)
+    uber_hire_mileage = parse_quick_number(uber_hire_mileage_raw, "Uber Hire Mileage", required=True)
+    fare = parse_quick_number(fare_raw, "Fare", required=True)
+    cash_collected = parse_quick_number(cash_collected_raw, "Cash Collected", required=True)
+
+    tip = parse_quick_number(tip_raw, "Tip")
+    toll_fee = parse_quick_number(toll_fee_raw, "Toll Fee")
+    other_expenses = parse_quick_number(other_expenses_raw, "Other Expenses")
+    platform_fee = parse_quick_number(platform_fee_raw, "Platform Fee")
+    bank_deposit = parse_quick_number(bank_deposit_raw, "Bank Deposit")
+
+    values_to_check = [
+        start_mileage, end_mileage, uber_hire_mileage, fare, cash_collected,
+        tip, toll_fee, other_expenses, platform_fee, bank_deposit
+    ]
+    if any(v is None for v in values_to_check):
         return
 
     if end_mileage < start_mileage:
         st.error("End mileage cannot be lower than start mileage.")
         return
 
+    # Existing operational calculations are intentionally unchanged.
     daily_mileage = max(0, end_mileage - start_mileage)
     loss_mileage = daily_mileage - uber_hire_mileage
     net_fare = max(0, fare - toll_fee)
     driver_salary = net_fare * 0.30
     total_driver_salary = driver_salary + toll_fee + tip
     amount_to_ceekay = cash_collected - total_driver_salary
+
+    if calculate_clicked:
+        st.markdown("### Driver Payment Summary")
+        p1, p2, p3 = st.columns(3)
+        p1.metric("Driver Salary (30%)", f"Rs. {driver_salary:,.2f}")
+        p2.metric("Toll Reimbursement", f"Rs. {toll_fee:,.2f}")
+        p3.metric("Tip", f"Rs. {tip:,.2f}")
+
+        p4, p5, p6 = st.columns(3)
+        p4.metric("Total Driver Payable", f"Rs. {total_driver_salary:,.2f}")
+        p5.metric("Amount to CEEKAY", f"Rs. {amount_to_ceekay:,.2f}")
+        p6.metric("Other Expenses", f"Rs. {other_expenses:,.2f}")
+
+        st.caption(
+            f"Daily Mileage: {daily_mileage:,.2f} km  |  "
+            f"Uber Hire Mileage: {uber_hire_mileage:,.2f} km  |  "
+            f"Loss Mileage: {loss_mileage:,.2f} km  |  "
+            f"Net Fare for Salary: Rs. {net_fare:,.2f}"
+        )
+        st.info("Review the payment figures above, then click Save Daily Entry when ready.")
+        return
 
     master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
     cost_per_km = 0.0
@@ -1775,11 +1989,305 @@ def page_admin_daily_entry():
     daily_sheet.append_row(new_row)
 
     st.success(
-        f"Daily entry saved successfully. Driver Salary: Rs. {driver_salary:,.2f} | "
+        f"Daily entry saved successfully. Total Driver Payable: Rs. {total_driver_salary:,.2f} | "
         f"Amount to CEEKAY: Rs. {amount_to_ceekay:,.2f}"
     )
+
+    # Clear only after saving; salary preview never clears the entered data.
+    st.session_state.daily_entry_form_version += 1
     st.rerun()
 
+
+
+# -------------------------------------------------------------------
+# MONTHLY CASH FLOW
+# -------------------------------------------------------------------
+def page_monthly_cash_flow():
+    reports = pd.DataFrame(daily_sheet.get_all_records())
+
+    if reports.empty:
+        st.info("No daily reports are available yet.")
+        return
+
+    reports = reports.copy()
+    if "status" in reports.columns:
+        reports = reports[reports["status"].astype(str).str.lower() == "correct"]
+
+    reports["date"] = pd.to_datetime(reports.get("date"), errors="coerce")
+    reports = reports.dropna(subset=["date"])
+    if reports.empty:
+        st.info("No valid dated reports are available.")
+        return
+
+    reports["fare"] = pd.to_numeric(reports.get("fare", 0), errors="coerce").fillna(0)
+
+    # Use the actual total driver payable already stored by the daily-entry logic.
+    if "total_driver_salary" in reports.columns:
+        reports["driver_payable"] = pd.to_numeric(reports["total_driver_salary"], errors="coerce").fillna(0)
+    else:
+        salary = pd.to_numeric(reports.get("driver_salary", 0), errors="coerce").fillna(0)
+        toll = pd.to_numeric(reports.get("toll_fee", 0), errors="coerce").fillna(0)
+        tip = pd.to_numeric(reports.get("tip", 0), errors="coerce").fillna(0)
+        reports["driver_payable"] = salary + toll + tip
+
+    reports["month"] = reports["date"].dt.strftime("%Y-%m")
+    platform_fee = pd.to_numeric(reports.get("platform_fee", 0), errors="coerce").fillna(0)
+    reports["platform_fee_cash"] = platform_fee
+
+    monthly = reports.groupby("month", as_index=False).agg(
+        monthly_revenue=("fare", "sum"),
+        driver_payable=("driver_payable", "sum"),
+        platform_fee=("platform_fee_cash", "sum"),
+    )
+    monthly["cash_before_electricity"] = (
+        monthly["monthly_revenue"]
+        - monthly["driver_payable"]
+        - monthly["platform_fee"]
+    )
+
+    elec = pd.DataFrame(monthly_cash_flow_sheet.get_all_records())
+    if elec.empty:
+        elec = pd.DataFrame(columns=["month", "electricity_bill", "updated_at", "note"])
+    if "electricity_bill" not in elec.columns:
+        elec["electricity_bill"] = 0
+    elec["electricity_bill"] = pd.to_numeric(elec["electricity_bill"], errors="coerce").fillna(0)
+    elec["month"] = elec.get("month", "").astype(str)
+
+    monthly = monthly.merge(elec[["month", "electricity_bill"]], on="month", how="left")
+    monthly["electricity_bill"] = monthly["electricity_bill"].fillna(0)
+    monthly["real_cash_flow"] = monthly["cash_before_electricity"] - monthly["electricity_bill"]
+    monthly = monthly.sort_values("month")
+
+    st.markdown("### Add / Update Electricity Bill")
+    month_options = sorted(monthly["month"].unique().tolist(), reverse=True)
+    selected_month = st.selectbox("Month", month_options, key="cashflow_bill_month")
+    current_bill = float(monthly.loc[monthly["month"] == selected_month, "electricity_bill"].iloc[0])
+    bill_raw = st.text_input(
+        "Electricity Bill (Rs.)",
+        value="" if current_bill == 0 else f"{current_bill:g}",
+        placeholder="Enter monthly electricity bill",
+        key="cashflow_electricity_bill",
+    )
+    note = st.text_input("Note", placeholder="Optional", key="cashflow_note")
+
+    if st.button("Save Electricity Bill", use_container_width=True, key="save_cashflow_bill"):
+        try:
+            bill = float(str(bill_raw).replace(",", "").strip() or 0)
+            if bill < 0:
+                raise ValueError
+        except ValueError:
+            st.error("Please enter a valid electricity bill amount.")
+            return
+
+        values = monthly_cash_flow_sheet.get_all_values()
+        row_to_update = None
+        for idx, row in enumerate(values[1:], start=2):
+            if row and str(row[0]).strip() == selected_month:
+                row_to_update = idx
+                break
+        now_txt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if row_to_update:
+            monthly_cash_flow_sheet.update(f"A{row_to_update}:D{row_to_update}", [[selected_month, bill, now_txt, note]])
+        else:
+            monthly_cash_flow_sheet.append_row([selected_month, bill, now_txt, note])
+        st.success(f"Electricity bill saved for {selected_month}.")
+        st.rerun()
+
+    st.markdown("---")
+    latest = monthly.iloc[-1]
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("Monthly Revenue", f"Rs. {latest['monthly_revenue']:,.2f}")
+    c2.metric("Driver Payable", f"Rs. {latest['driver_payable']:,.2f}")
+    c3.metric("Platform Fee", f"Rs. {latest['platform_fee']:,.2f}")
+    c4.metric("Electricity Bill", f"Rs. {latest['electricity_bill']:,.2f}")
+    c5.metric("Real Cash Flow", f"Rs. {latest['real_cash_flow']:,.2f}")
+    st.caption(f"Latest month shown: {latest['month']}")
+
+    st.markdown("### Monthly Cash Flow Trend")
+    chart_df = monthly.copy()
+    fig = px.line(
+        chart_df, x="month", y="real_cash_flow", markers=True,
+        labels={"month": "Month", "real_cash_flow": "Real Cash Flow (Rs.)"},
+        title="Real Monthly Cash Flow"
+    )
+    fig.update_layout(margin=dict(l=10, r=10, t=50, b=10), separators=".,")
+    fig.update_yaxes(tickformat=",.0f")
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("### Monthly Cash Flow Details")
+    display = monthly.rename(columns={
+        "month": "Month",
+        "monthly_revenue": "Monthly Revenue",
+        "driver_payable": "Driver Payable",
+        "platform_fee": "Platform Fee",
+        "cash_before_electricity": "Cash Flow Before Electricity",
+        "electricity_bill": "Electricity Bill",
+        "real_cash_flow": "Real Cash Flow",
+    })
+    for col in ["Monthly Revenue", "Driver Payable", "Platform Fee", "Cash Flow Before Electricity", "Electricity Bill", "Real Cash Flow"]:
+        display[col] = display[col].map(lambda x: f"{x:,.2f}")
+    st.dataframe(display, use_container_width=True, hide_index=True)
+
+
+# -------------------------------------------------------------------
+# SETTINGS — SAFE MASTER DATA EDITOR
+# -------------------------------------------------------------------
+def _settings_row_values(ws):
+    values = ws.get_all_values()
+    if not values:
+        return [], []
+    return values[0], values[1:]
+
+
+def _setting_text(value):
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _setting_number(value, default=0.0):
+    try:
+        if value in (None, ""):
+            return float(default)
+        return float(str(value).replace(",", "").strip())
+    except Exception:
+        return float(default)
+
+
+def page_settings():
+    st.caption("Change master/configuration values stored in the CEEKAY_Driver_Reports Google Sheet. Daily report history is protected and cannot be edited here.")
+
+    tab1, tab2, tab3 = st.tabs([
+        "Drivers & Assignment",
+        "Vehicle Master",
+        "Electricity Settings",
+    ])
+
+    # ---------------------------------------------------------------
+    # DRIVERS / VEHICLE ASSIGNMENT
+    # ---------------------------------------------------------------
+    with tab1:
+        st.markdown("### Drivers & Vehicle Assignment")
+        headers, rows = _settings_row_values(drivers_sheet)
+        if not rows:
+            st.info("No drivers are available in the drivers sheet.")
+        else:
+            options = {
+                f"{r[0] if len(r) > 0 else 'Driver'}  •  {r[3] if len(r) > 3 else ''}": i + 2
+                for i, r in enumerate(rows)
+            }
+            selected_label = st.selectbox("Select Driver", list(options.keys()), key="settings_driver_select")
+            sheet_row = options[selected_label]
+            row = rows[sheet_row - 2]
+            row = row + [""] * max(0, 4 - len(row))
+
+            with st.form("settings_driver_form"):
+                c1, c2 = st.columns(2)
+                driver_name = c1.text_input("Driver Name", value=_setting_text(row[0]))
+                vehicle_no = c2.text_input("Assigned Vehicle", value=_setting_text(row[3]))
+                username = c1.text_input("Username (legacy field)", value=_setting_text(row[1]))
+                password = c2.text_input("Password (legacy field)", value=_setting_text(row[2]))
+                save_driver = st.form_submit_button("Save Driver Settings", use_container_width=True)
+
+            if save_driver:
+                if not driver_name.strip():
+                    st.error("Driver name is required.")
+                elif not vehicle_no.strip():
+                    st.error("Assigned vehicle is required.")
+                else:
+                    drivers_sheet.update(
+                        f"A{sheet_row}:D{sheet_row}",
+                        [[driver_name.strip(), username.strip(), password.strip(), vehicle_no.strip()]],
+                    )
+                    st.success("Driver settings updated successfully.")
+                    st.rerun()
+
+        st.info("Username and password are retained only because they already exist in your sheet. The current system uses a single administrator login.")
+
+    # ---------------------------------------------------------------
+    # VEHICLE MASTER
+    # ---------------------------------------------------------------
+    with tab2:
+        st.markdown("### Vehicle Master Settings")
+        headers, rows = _settings_row_values(vehicle_master_sheet)
+        if not rows:
+            st.info("No vehicles are available in vehicle_master.")
+        else:
+            options = {
+                f"{r[0] if len(r) > 0 else 'Vehicle'}": i + 2
+                for i, r in enumerate(rows)
+            }
+            selected_vehicle_label = st.selectbox("Select Vehicle", list(options.keys()), key="settings_vehicle_select")
+            sheet_row = options[selected_vehicle_label]
+            row = rows[sheet_row - 2]
+            row = row + [""] * max(0, 12 - len(row))
+
+            with st.form("settings_vehicle_form"):
+                c1, c2 = st.columns(2)
+                vehicle_no = c1.text_input("Vehicle Number", value=_setting_text(row[0]))
+                license_date = c2.text_input("License Renewal Date", value=_setting_text(row[1]), help="Recommended format: YYYY-MM-DD")
+                insurance_date = c1.text_input("Insurance Renewal Date", value=_setting_text(row[2]), help="Recommended format: YYYY-MM-DD")
+                lease_installment = c2.number_input("Lease Installment Amount (Rs.)", min_value=0.0, value=_setting_number(row[3]), step=1000.0)
+                lease_total = c1.number_input("Total Lease Installments", min_value=0.0, value=_setting_number(row[4]), step=1.0)
+                lease_start = c2.text_input("Lease Start Date", value=_setting_text(row[5]), help="Recommended format: YYYY-MM-DD")
+                alignment_interval = c1.number_input("Wheel Alignment Interval (KM)", min_value=0.0, value=_setting_number(row[6]), step=500.0)
+                air_filter_interval = c2.number_input("Air Filter Interval (KM)", min_value=0.0, value=_setting_number(row[7]), step=1000.0)
+                purchase_date = c1.text_input("Purchase Date", value=_setting_text(row[8]), help="Recommended format: YYYY-MM-DD")
+                purchase_cost = c2.number_input("Purchase Cost (Rs.)", min_value=0.0, value=_setting_number(row[9]), step=10000.0)
+                useful_years = c1.number_input("Useful Life (Years)", min_value=0.0, value=_setting_number(row[10]), step=1.0)
+                cost_per_km = c2.number_input("Running Cost per KM (Rs.)", min_value=0.0, value=_setting_number(row[11]), step=1.0)
+                save_vehicle = st.form_submit_button("Save Vehicle Settings", use_container_width=True)
+
+            if save_vehicle:
+                if not vehicle_no.strip():
+                    st.error("Vehicle number is required.")
+                else:
+                    vehicle_master_sheet.update(
+                        f"A{sheet_row}:L{sheet_row}",
+                        [[
+                            vehicle_no.strip(), license_date.strip(), insurance_date.strip(),
+                            lease_installment, lease_total, lease_start.strip(),
+                            alignment_interval, air_filter_interval, purchase_date.strip(),
+                            purchase_cost, useful_years, cost_per_km,
+                        ]],
+                    )
+                    st.success("Vehicle master settings updated successfully.")
+                    st.rerun()
+
+        st.warning("Changes to cost per KM, service intervals, lease details, purchase cost or useful life will affect future calculations/reports that use those master values.")
+
+    # ---------------------------------------------------------------
+    # MONTHLY ELECTRICITY
+    # ---------------------------------------------------------------
+    with tab3:
+        st.markdown("### Monthly Electricity Settings")
+        headers, rows = _settings_row_values(monthly_cash_flow_sheet)
+        if not rows:
+            st.info("No electricity bills have been recorded yet. Add the first one from Monthly Cash Flow.")
+        else:
+            options = {
+                f"{r[0] if len(r) > 0 else 'Month'}": i + 2
+                for i, r in enumerate(rows)
+            }
+            selected_month_label = st.selectbox("Select Month", list(options.keys()), key="settings_electricity_month")
+            sheet_row = options[selected_month_label]
+            row = rows[sheet_row - 2]
+            row = row + [""] * max(0, 4 - len(row))
+
+            with st.form("settings_electricity_form"):
+                month = st.text_input("Month", value=_setting_text(row[0]), help="Use YYYY-MM format")
+                bill = st.number_input("Electricity Bill (Rs.)", min_value=0.0, value=_setting_number(row[1]), step=100.0)
+                note = st.text_input("Note", value=_setting_text(row[3]))
+                save_electricity = st.form_submit_button("Save Electricity Settings", use_container_width=True)
+
+            if save_electricity:
+                now_txt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                monthly_cash_flow_sheet.update(
+                    f"A{sheet_row}:D{sheet_row}",
+                    [[month.strip(), bill, now_txt, note.strip()]],
+                )
+                st.success("Electricity settings updated successfully.")
+                st.rerun()
 
 # -------------------------------------------------------------------
 # MAIN APP — SINGLE ADMIN ACCOUNT
@@ -1809,8 +2317,10 @@ else:
       "Dashboard":("Business Dashboard","Revenue, profitability, mileage and fleet health at a glance."),
       "Daily Entry":("Daily Operations","Record driver and trip income directly from the admin workspace."),
       "Profit Reports":("Profit Reports","Review daily, date-range and monthly business performance."),
+      "Monthly Cash Flow":("Monthly Cash Flow","Track monthly cash available after driver payments and electricity."),
       "Vehicle Entry":("Vehicle Costs & Service","Maintain vehicle master data, running costs and service expenses."),
-      "Vehicle Report":("Vehicle Report","Review vehicle-level income, expenses, mileage and profitability.")
+      "Vehicle Report":("Vehicle Report","Review vehicle-level income, expenses, mileage and profitability."),
+      "Settings":("Settings","Update master values and configuration stored in the CEEKAY Tours Google Sheet.")
     }
     if page!="Logout":
         title,sub=meta[page]
@@ -1818,8 +2328,10 @@ else:
     if page=="Dashboard": page_admin_dashboard()
     elif page=="Daily Entry": page_admin_daily_entry()
     elif page=="Profit Reports": page_profit_reports()
+    elif page=="Monthly Cash Flow": page_monthly_cash_flow()
     elif page=="Vehicle Entry": page_vehicle_entry()
     elif page=="Vehicle Report": page_vehicle_report()
+    elif page=="Settings": page_settings()
     elif page=="Logout":
         st.session_state.clear()
         st.rerun()

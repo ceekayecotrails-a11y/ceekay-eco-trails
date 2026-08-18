@@ -2021,6 +2021,39 @@ def page_monthly_cash_flow():
 
     reports["fare"] = pd.to_numeric(reports.get("fare", 0), errors="coerce").fillna(0)
 
+    # Vehicle filter: default is All Vehicles so the existing totals remain unchanged.
+    vehicle_options = ["All Vehicles"]
+    if "vehicle_no" in reports.columns:
+        available_vehicles = sorted({
+            str(v).strip() for v in reports["vehicle_no"].dropna().tolist()
+            if str(v).strip()
+        })
+        vehicle_options.extend(available_vehicles)
+
+    selected_cashflow_vehicle = st.selectbox(
+        "Vehicle",
+        vehicle_options,
+        index=0,
+        key="monthly_cashflow_vehicle_filter"
+    )
+
+    if selected_cashflow_vehicle != "All Vehicles":
+        reports = reports[
+            reports["vehicle_no"].astype(str).str.strip() == selected_cashflow_vehicle
+        ].copy()
+
+    if reports.empty:
+        st.info("No daily reports are available for the selected vehicle.")
+        return
+
+    # Cash and bank amounts are kept separate for the cash-flow breakdown.
+    reports["cash_flow_cash"] = pd.to_numeric(
+        reports.get("amount_to_ceekay", 0), errors="coerce"
+    ).fillna(0)
+    reports["cash_flow_bank"] = pd.to_numeric(
+        reports.get("bank_deposit", 0), errors="coerce"
+    ).fillna(0)
+
     # Use the actual total driver payable already stored by the daily-entry logic.
     if "total_driver_salary" in reports.columns:
         reports["driver_payable"] = pd.to_numeric(reports["total_driver_salary"], errors="coerce").fillna(0)
@@ -2038,7 +2071,10 @@ def page_monthly_cash_flow():
         monthly_revenue=("fare", "sum"),
         driver_payable=("driver_payable", "sum"),
         platform_fee=("platform_fee_cash", "sum"),
+        cash_amount=("cash_flow_cash", "sum"),
+        bank_amount=("cash_flow_bank", "sum"),
     )
+    monthly["total_cash_flow"] = monthly["cash_amount"] + monthly["bank_amount"]
     monthly["cash_before_electricity"] = (
         monthly["monthly_revenue"]
         - monthly["driver_payable"]
@@ -2101,7 +2137,14 @@ def page_monthly_cash_flow():
     c3.metric("Platform Fee", f"Rs. {latest['platform_fee']:,.2f}")
     c4.metric("Electricity Bill", f"Rs. {latest['electricity_bill']:,.2f}")
     c5.metric("Real Cash Flow", f"Rs. {latest['real_cash_flow']:,.2f}")
-    st.caption(f"Latest month shown: {latest['month']}")
+    st.caption(f"Latest month shown: {latest['month']} • Vehicle: {selected_cashflow_vehicle}")
+
+    # Cash-flow collection breakdown. Total = Cash + Bank, before electricity.
+    st.markdown("### Cash Flow Breakdown")
+    b1, b2, b3 = st.columns(3)
+    b1.metric("Cash", f"Rs. {latest['cash_amount']:,.2f}")
+    b2.metric("Bank", f"Rs. {latest['bank_amount']:,.2f}")
+    b3.metric("Total Cash Flow", f"Rs. {latest['total_cash_flow']:,.2f}")
 
     st.markdown("### Monthly Cash Flow Trend")
     chart_df = monthly.copy()
@@ -2120,11 +2163,14 @@ def page_monthly_cash_flow():
         "monthly_revenue": "Monthly Revenue",
         "driver_payable": "Driver Payable",
         "platform_fee": "Platform Fee",
+        "cash_amount": "Cash",
+        "bank_amount": "Bank",
+        "total_cash_flow": "Total Cash Flow",
         "cash_before_electricity": "Cash Flow Before Electricity",
         "electricity_bill": "Electricity Bill",
         "real_cash_flow": "Real Cash Flow",
     })
-    for col in ["Monthly Revenue", "Driver Payable", "Platform Fee", "Cash Flow Before Electricity", "Electricity Bill", "Real Cash Flow"]:
+    for col in ["Monthly Revenue", "Driver Payable", "Platform Fee", "Cash", "Bank", "Total Cash Flow", "Cash Flow Before Electricity", "Electricity Bill", "Real Cash Flow"]:
         display[col] = display[col].map(lambda x: f"{x:,.2f}")
     st.dataframe(display, use_container_width=True, hide_index=True)
 

@@ -2072,7 +2072,11 @@ def page_monthly_cash_flow():
         driver_payable=("driver_payable", "sum"),
         platform_fee=("platform_fee_cash", "sum"),
         cash_amount=("cash_flow_cash", "sum"),
-        bank_amount=("cash_flow_bank", "sum"),
+        bank_amount_gross = ("cash_flow_bank", "sum"),
+
+        # Net bank balance after deducting platform fee
+
+        bank_amount = bank_amount_gross - platform_fee
     )
     monthly["total_cash_flow"] = monthly["cash_amount"] + monthly["bank_amount"]
     monthly["cash_before_electricity"] = (

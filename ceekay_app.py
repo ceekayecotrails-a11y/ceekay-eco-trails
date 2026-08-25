@@ -2173,9 +2173,6 @@ def page_monthly_cash_flow():
         "electricity_bill": "Electricity Bill",
         "real_cash_flow": "Real Cash Flow",
     })
-    # Gross bank amount is an internal calculation only; hide it from the user.
-    if "bank_amount_gross" in display.columns:
-        display = display.drop(columns=["bank_amount_gross"])
     for col in ["Monthly Revenue", "Driver Payable", "Platform Fee", "Cash", "Bank", "Total Cash Flow", "Cash Flow Before Electricity", "Electricity Bill", "Real Cash Flow"]:
         display[col] = display[col].map(lambda x: f"{x:,.2f}")
     st.dataframe(display, use_container_width=True, hide_index=True)

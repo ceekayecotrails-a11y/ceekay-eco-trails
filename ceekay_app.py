@@ -2513,6 +2513,7 @@ else:
       "Monthly Cash Flow":("Monthly Cash Flow","Track monthly cash available after driver payments and electricity."),
       "Vehicle Entry":("Vehicle Costs & Service","Maintain vehicle master data, running costs and service expenses."),
       "Vehicle Report":("Vehicle Report","Review vehicle-level income, expenses, mileage and profitability."),
+      "Driver Report":("Driver Report","Review driver-wise trips, mileage, earnings, salary and performance."),
       "Settings":("Settings","Update master values and configuration stored in the CEEKAY Tours Google Sheet.")
     }
     if page!="Logout":
@@ -2524,6 +2525,7 @@ else:
     elif page=="Monthly Cash Flow": page_monthly_cash_flow()
     elif page=="Vehicle Entry": page_vehicle_entry()
     elif page=="Vehicle Report": page_vehicle_report()
+    elif page=="Driver Report": page_driver_report()
     elif page=="Settings": page_settings()
     elif page=="Logout":
         st.session_state.clear()

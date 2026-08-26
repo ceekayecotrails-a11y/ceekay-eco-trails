@@ -160,8 +160,8 @@ def sidebar_menu(user_type=None):
         render_centered_logo(145)
         st.markdown('<div class="ck-side-brand"><b>CEEKAY TOURS</b><span>Management Console</span></div>', unsafe_allow_html=True)
         st.divider()
-        icons={"Dashboard":"▦","Daily Entry":"＋","Profit Reports":"↗","Monthly Cash Flow":"↕","Vehicle Entry":"⚙","Vehicle Report":"◉","Settings":"☷","Logout":"↪"}
-        page=st.radio("Navigation",["Dashboard","Daily Entry","Profit Reports","Monthly Cash Flow","Vehicle Entry","Vehicle Report","Settings","Logout"],format_func=lambda x:f"{icons[x]}   {x}",label_visibility="collapsed")
+        icons={"Dashboard":"▦","Daily Entry":"＋","Profit Reports":"↗","Monthly Cash Flow":"↕","Vehicle Entry":"⚙","Vehicle Report":"◉","Driver Report":"👤","Settings":"☷","Logout":"↪"}
+        page=st.radio("Navigation",["Dashboard","Daily Entry","Profit Reports","Monthly Cash Flow","Vehicle Entry","Vehicle Report","Driver Report","Settings","Logout"],format_func=lambda x:f"{icons[x]}   {x}",label_visibility="collapsed")
         st.divider()
         st.caption("CEEKAY Tours • Admin Workspace")
         return page
@@ -1382,6 +1382,52 @@ def page_profit_reports():
     elif mode == "Monthly Profit":
         page_admin_monthly_profit()
 
+def page_driver_report():
+    """Admin view of the previous driver workspace, with a driver filter.
+
+    This page is read-only and reuses the existing driver dashboard, summary,
+    and earnings-report logic so no daily-report calculations are changed.
+    """
+    drivers_current = pd.DataFrame(drivers_sheet.get_all_records())
+    if drivers_current.empty or "driver_name" not in drivers_current.columns:
+        st.warning("No drivers are available in the drivers sheet.")
+        return
+
+    drivers_current = drivers_current.copy()
+    drivers_current["driver_name"] = drivers_current["driver_name"].astype(str).str.strip()
+    drivers_current = drivers_current[drivers_current["driver_name"] != ""]
+    if drivers_current.empty:
+        st.warning("No valid drivers are available in the drivers sheet.")
+        return
+
+    driver_names = sorted(drivers_current["driver_name"].unique().tolist())
+    selected_driver_name = st.selectbox(
+        "Select Driver",
+        driver_names,
+        key="admin_driver_report_filter",
+    )
+    selected_rows = drivers_current[drivers_current["driver_name"] == selected_driver_name]
+    selected_driver = selected_rows.iloc[0].to_dict()
+
+    vehicle_no = str(selected_driver.get("vehicle_no", "")).strip()
+    st.caption(f"Assigned Vehicle: {vehicle_no or 'Not assigned'}")
+
+    tab1, tab2, tab3 = st.tabs([
+        "📊 Driver Dashboard",
+        "📄 Driver Summary",
+        "📅 Earnings Report",
+    ])
+
+    with tab1:
+        page_driver_dashboard(selected_driver)
+
+    with tab2:
+        page_driver_summary(selected_driver)
+
+    with tab3:
+        page_earnings_report("driver", selected_driver)
+
+
 def page_vehicle_report():
 
     # Main page heading is rendered centrally by the application shell.
@@ -1477,6 +1523,101 @@ def page_vehicle_report():
 
 
     # 🔥 ADD STEP 4 HERE
+    # ----------------------------------------------------------------
+    # Vehicle Service / Leasing Summary (restored from previous system)
+    # ----------------------------------------------------------------
+    st.markdown("---")
+    st.subheader("🛠 Vehicle Service & Leasing Status")
+
+    service_df = get_vehicle_service_data()
+    selected_clean = str(selected_vehicle).replace("-", "").strip()
+    service_row = pd.DataFrame()
+    if not service_df.empty and "vehicle_no" in service_df.columns:
+        service_row = service_df[
+            service_df["vehicle_no"].astype(str).str.replace("-", "", regex=False).str.strip() == selected_clean
+        ]
+
+    if not service_row.empty:
+        row = service_row.iloc[0]
+        current_mileage = float(row.get("current_mileage", 0))
+        next_alignment = float(row.get("next_alignment", 0))
+        next_air_filter = float(row.get("next_air_filter", 0))
+
+        if next_alignment > 0:
+            if current_mileage >= next_alignment:
+                alignment_status = "🔴 OVERDUE"
+            elif current_mileage >= next_alignment - 500:
+                alignment_status = "🟡 Due Soon"
+            else:
+                alignment_status = "🟢 OK"
+        else:
+            alignment_status = "⚪ Not configured"
+
+        if next_air_filter > 0:
+            if current_mileage >= next_air_filter:
+                air_status = "🔴 OVERDUE"
+            elif current_mileage >= next_air_filter - 1000:
+                air_status = "🟡 Due Soon"
+            else:
+                air_status = "🟢 OK"
+        else:
+            air_status = "⚪ Not configured"
+
+        lease_installment = float(row.get("lease_installment_amount", 0))
+        total_installments = int(float(row.get("lease_total_installments", 0) or 0))
+
+        expense_for_lease = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+        paid_installments = 0
+        if not expense_for_lease.empty and {"vehicle_no", "category", "description"}.issubset(expense_for_lease.columns):
+            lease_df = expense_for_lease.copy()
+            lease_df["vehicle_no_clean"] = lease_df["vehicle_no"].astype(str).str.replace("-", "", regex=False).str.strip()
+            lease_df = lease_df[
+                (lease_df["vehicle_no_clean"] == selected_clean)
+                & (lease_df["category"].astype(str).str.lower().eq("leasing"))
+            ].copy()
+            if not lease_df.empty:
+                lease_df["installment_no"] = pd.to_numeric(
+                    lease_df["description"].astype(str).str.extract(
+                        r"(?i)(?:installment|instalment|installemnt)\s*[-:#]?\s*(\d+)",
+                        expand=False,
+                    ),
+                    errors="coerce",
+                )
+                valid_installments = lease_df["installment_no"].dropna()
+                if not valid_installments.empty:
+                    paid_installments = int(valid_installments.max())
+
+        paid_installments = min(max(paid_installments, 0), total_installments)
+        remaining_installments = max(0, total_installments - paid_installments)
+        remaining_balance = remaining_installments * lease_installment
+
+        license_date = pd.to_datetime(row.get("license_renewal_date"), errors="coerce")
+        insurance_date = pd.to_datetime(row.get("insurance_renewal_date"), errors="coerce")
+        today = date.today()
+        license_text = license_date.date().isoformat() if not pd.isna(license_date) else "Not set"
+        insurance_text = insurance_date.date().isoformat() if not pd.isna(insurance_date) else "Not set"
+        license_days = (license_date.date() - today).days if not pd.isna(license_date) else None
+        insurance_days = (insurance_date.date() - today).days if not pd.isna(insurance_date) else None
+
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Current Mileage", f"{current_mileage:,.0f} km")
+        c2.metric("Next Wheel Alignment", f"{next_alignment:,.0f} km" if next_alignment else "Not set")
+        c3.metric("Next Air Filter", f"{next_air_filter:,.0f} km" if next_air_filter else "Not set")
+
+        st.write(f"Wheel Alignment Status: **{alignment_status}**")
+        st.write(f"Air Filter Status: **{air_status}**")
+
+        c4, c5, c6 = st.columns(3)
+        c4.metric("Lease Installment", f"Rs. {lease_installment:,.0f}")
+        c5.metric("Remaining Installments", f"{remaining_installments}")
+        c6.metric("Remaining Lease Balance", f"Rs. {remaining_balance:,.0f}")
+
+        c7, c8 = st.columns(2)
+        c7.write(f"**License Renewal:** {license_text}  " + (f"({license_days} days remaining)" if license_days is not None else ""))
+        c8.write(f"**Insurance Renewal:** {insurance_text}  " + (f"({insurance_days} days remaining)" if insurance_days is not None else ""))
+    else:
+        st.info("No vehicle service master data is available for this vehicle.")
+
     st.markdown("---")
     st.subheader("📊 Expense Distribution")
 

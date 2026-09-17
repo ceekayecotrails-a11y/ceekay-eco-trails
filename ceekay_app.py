@@ -106,11 +106,25 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(
     scope
 )
 
+import streamlit as st
+import gspread
+import time
 client = gspread.authorize(creds)
 
+file = None
+last_error = None
 
+for attempt in range(3):
+    try:
+        file = client.open("CEEKAY_Driver_Reports")
+        break
+    except gspread.exceptions.APIError as e:
+        last_error = e
+        if attempt < 2:
+            time.sleep(2 * (attempt + 1))
 
-
+if file is None:
+    raise last_error
 file = client.open("CEEKAY_Driver_Reports")
 drivers_sheet = file.worksheet("drivers")
 daily_sheet = file.worksheet("daily_reports")

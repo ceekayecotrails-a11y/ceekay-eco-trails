@@ -8,6 +8,7 @@ from datetime import datetime, date
 import io
 import matplotlib.pyplot as plt
 import base64
+import time
 from pathlib import Path
 
 APP_TITLE = "CEEKAY Tours Manager"
@@ -106,43 +107,57 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(
     scope
 )
 
-import streamlit as st
-import gspread
-import time
 client = gspread.authorize(creds)
 
 file = None
 last_error = None
 
-for attempt in range(3):
+# Google can temporarily return HTTP 429 when the Sheets read quota is exceeded.
+# Retry only the initial workbook open, with increasing delays.
+for attempt in range(4):
     try:
-        file = client.open("CEEKAY_Driver_Reports")
+        file = client.open(WORKBOOK_NAME)
         break
     except gspread.exceptions.APIError as e:
         last_error = e
-        if attempt < 2:
-            time.sleep(2 * (attempt + 1))
+        status_code = getattr(getattr(e, "response", None), "status_code", None)
+        if status_code == 429 and attempt < 3:
+            time.sleep(10 * (attempt + 1))
+        else:
+            break
 
 if file is None:
     raise last_error
-file = client.open("CEEKAY_Driver_Reports")
-drivers_sheet = file.worksheet("drivers")
-daily_sheet = file.worksheet("daily_reports")
-vehicle_master_sheet = file.worksheet("vehicle_master")
-vehicle_variable_sheet = file.worksheet("vehicle_variable_costs")
-try:
-    monthly_cash_flow_sheet = file.worksheet("monthly_cash_flow")
-except gspread.WorksheetNotFound:
+
+# Fetch worksheet metadata once instead of calling file.worksheet() repeatedly.
+worksheet_map = {ws.title: ws for ws in file.worksheets()}
+
+drivers_sheet = worksheet_map["drivers"]
+daily_sheet = worksheet_map["daily_reports"]
+vehicle_master_sheet = worksheet_map["vehicle_master"]
+vehicle_variable_sheet = worksheet_map["vehicle_variable_costs"]
+
+if "monthly_cash_flow" in worksheet_map:
+    monthly_cash_flow_sheet = worksheet_map["monthly_cash_flow"]
+else:
     monthly_cash_flow_sheet = file.add_worksheet(title="monthly_cash_flow", rows=200, cols=4)
     monthly_cash_flow_sheet.append_row(["month", "electricity_bill", "updated_at", "note"])
 
-drivers_df = pd.DataFrame(drivers_sheet.get_all_records())
+@st.cache_data(ttl=30, show_spinner=False)
+def load_sheet_records(sheet_name, workbook_id):
+    return worksheet_map[sheet_name].get_all_records()
+
+@st.cache_data(ttl=30, show_spinner=False)
+def load_sheet_values(sheet_name, workbook_id):
+    return worksheet_map[sheet_name].get_all_values()
+
+drivers_df = pd.DataFrame(load_sheet_records("drivers", file.id))
 
 # -------------------------------------------------------------------
 # CHECK DRIVER LAST STATUS
 # -------------------------------------------------------------------
 def check_driver_status(driver_name):
-    df = pd.DataFrame(daily_sheet.get_all_records())
+    df = pd.DataFrame(load_sheet_records("daily_reports", file.id))
     df = df[df["driver_name"] == driver_name]
     if df.empty:
         return "No Reports"
@@ -181,7 +196,7 @@ def sidebar_menu(user_type=None):
         return page
 
 def get_last_end_mileage(driver_name):
-    df = pd.DataFrame(daily_sheet.get_all_records())
+    df = pd.DataFrame(load_sheet_records("daily_reports", file.id))
 
     if df.empty:
         return 0
@@ -381,7 +396,7 @@ def page_driver_form(driver):
         to_ceekay = st.session_state.cash - total_salary
 
         # 🔹 Load vehicle cost per km
-        master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
+        master_df = pd.DataFrame(load_sheet_records("vehicle_master", file.id))
 
         master_df["vehicle_no"] = (
             master_df["vehicle_no"]
@@ -436,6 +451,8 @@ def page_driver_form(driver):
         ]
 
         daily_sheet.append_row(new_row)
+        load_sheet_records.clear()
+        load_sheet_values.clear()
 
         st.success("Submitted successfully! Please wait for management approval.")
         st.session_state.clear()
@@ -447,7 +464,7 @@ def page_driver_form(driver):
 def page_driver_summary(driver):
     st.markdown("<div class='title-text'>📄 My Summary</div>", unsafe_allow_html=True)
 
-    df = pd.DataFrame(daily_sheet.get_all_records())
+    df = pd.DataFrame(load_sheet_records("daily_reports", file.id))
     df = df[df["driver_name"] == driver["driver_name"]]
 
     if df.empty:
@@ -464,7 +481,7 @@ def page_driver_dashboard(driver):
 
     st.markdown("<div class='title-text'>📊 Driver Dashboard</div>", unsafe_allow_html=True)
 
-    df = pd.DataFrame(daily_sheet.get_all_records())
+    df = pd.DataFrame(load_sheet_records("daily_reports", file.id))
 
     if df.empty:
         st.info("No data available")
@@ -620,7 +637,7 @@ def page_driver_dashboard(driver):
     st.markdown("---")
     st.subheader("Top Driver of the Month")
 
-    df_all = pd.DataFrame(daily_sheet.get_all_records())
+    df_all = pd.DataFrame(load_sheet_records("daily_reports", file.id))
 
     if not df_all.empty:
 
@@ -683,7 +700,7 @@ def page_earnings_report(user_type, driver=None):
 
     st.markdown("<div class='title-text'>📅 Earnings Report</div>", unsafe_allow_html=True)
 
-    df = pd.DataFrame(daily_sheet.get_all_records())
+    df = pd.DataFrame(load_sheet_records("daily_reports", file.id))
     df["date"] = pd.to_datetime(df["date"])
     df = df[df["status"] == "Correct"]
 
@@ -774,9 +791,9 @@ def page_earnings_report(user_type, driver=None):
 
 def get_vehicle_service_data():
 
-    df_reports = pd.DataFrame(daily_sheet.get_all_records())
-    master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
-    expense_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+    df_reports = pd.DataFrame(load_sheet_records("daily_reports", file.id))
+    master_df = pd.DataFrame(load_sheet_records("vehicle_master", file.id))
+    expense_df = pd.DataFrame(load_sheet_records("vehicle_variable_costs", file.id))
 
     if df_reports.empty or master_df.empty:
         return pd.DataFrame()
@@ -908,7 +925,7 @@ def get_vehicle_service_data():
 # -------------------------------------------------------------------
 def page_admin_dashboard():
     # Executive dashboard — UI rebuilt without changing the source data or core formulas.
-    df = pd.DataFrame(daily_sheet.get_all_records())
+    df = pd.DataFrame(load_sheet_records("daily_reports", file.id))
     if df.empty:
         st.warning("No data available.")
         return
@@ -1060,10 +1077,10 @@ def page_admin_dashboard():
         daily_mileage=("daily_mileage", "sum"),
     )
 
-    variable_df = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+    variable_df = pd.DataFrame(load_sheet_records("vehicle_variable_costs", file.id))
     if not variable_df.empty:
         variable_df["amount"] = pd.to_numeric(variable_df.get("amount", 0), errors="coerce").fillna(0)
-    master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
+    master_df = pd.DataFrame(load_sheet_records("vehicle_master", file.id))
 
     vehicle_rows = []
     for _, vr in vehicle_summary.iterrows():
@@ -1186,7 +1203,7 @@ def page_admin_daily_profit():
 
     st.markdown("<h2>💰 Daily Profit Report</h2>", unsafe_allow_html=True)
 
-    df = pd.DataFrame(daily_sheet.get_all_records())
+    df = pd.DataFrame(load_sheet_records("daily_reports", file.id))
 
     numeric_cols = [
     "fare", "driver_salary", "toll_fee", "tip", "other_expenses",
@@ -1248,7 +1265,7 @@ def page_admin_range_profit():
 
     st.markdown("<h2>📂 Range Profit Report</h2>", unsafe_allow_html=True)
 
-    df = pd.DataFrame(daily_sheet.get_all_records())
+    df = pd.DataFrame(load_sheet_records("daily_reports", file.id))
     
 
     numeric_cols = [
@@ -1318,7 +1335,7 @@ def page_admin_monthly_profit():
 
     st.markdown("<h2>📆 Monthly Profit Summary</h2>", unsafe_allow_html=True)
 
-    df = pd.DataFrame(daily_sheet.get_all_records())
+    df = pd.DataFrame(load_sheet_records("daily_reports", file.id))
   
 
     numeric_cols = [
@@ -1402,7 +1419,7 @@ def page_driver_report():
     This page is read-only and reuses the existing driver dashboard, summary,
     and earnings-report logic so no daily-report calculations are changed.
     """
-    drivers_current = pd.DataFrame(drivers_sheet.get_all_records())
+    drivers_current = pd.DataFrame(load_sheet_records("drivers", file.id))
     if drivers_current.empty or "driver_name" not in drivers_current.columns:
         st.warning("No drivers are available in the drivers sheet.")
         return
@@ -1449,7 +1466,7 @@ def page_vehicle_report():
     selected_vehicle = st.selectbox("Select Vehicle", vehicles)
 
     # ---------------- Revenue Data ----------------
-    df_reports = pd.DataFrame(daily_sheet.get_all_records())
+    df_reports = pd.DataFrame(load_sheet_records("daily_reports", file.id))
     df_reports = df_reports[
         (df_reports["vehicle_no"] == selected_vehicle) &
         (df_reports["status"] == "Correct")
@@ -1474,7 +1491,7 @@ def page_vehicle_report():
     total_mileage = df_reports["daily_mileage"].sum()
         
     # ---------------- Variable Costs ----------------
-    df_variable = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+    df_variable = pd.DataFrame(load_sheet_records("vehicle_variable_costs", file.id))
     df_variable["amount"] = pd.to_numeric(df_variable["amount"], errors="coerce").fillna(0)
     df_variable = df_variable[df_variable["vehicle_no"] == selected_vehicle]
 
@@ -1485,7 +1502,7 @@ def page_vehicle_report():
         total_variable = 0
 
     # ---------------- Depreciation + Master Data ----------------
-    df_master = pd.DataFrame(vehicle_master_sheet.get_all_records())
+    df_master = pd.DataFrame(load_sheet_records("vehicle_master", file.id))
     df_master = df_master[df_master["vehicle_no"] == selected_vehicle]
 
     if not df_master.empty:
@@ -1580,7 +1597,7 @@ def page_vehicle_report():
         lease_installment = float(row.get("lease_installment_amount", 0))
         total_installments = int(float(row.get("lease_total_installments", 0) or 0))
 
-        expense_for_lease = pd.DataFrame(vehicle_variable_sheet.get_all_records())
+        expense_for_lease = pd.DataFrame(load_sheet_records("vehicle_variable_costs", file.id))
         paid_installments = 0
         if not expense_for_lease.empty and {"vehicle_no", "category", "description"}.issubset(expense_for_lease.columns):
             lease_df = expense_for_lease.copy()
@@ -1691,6 +1708,8 @@ def page_vehicle_entry():
                     purchase_cost,
                     useful_years
                 ])
+                load_sheet_records.clear()
+                load_sheet_values.clear()
                 st.success("Vehicle added successfully!")
 
     # ------------------------------------------------
@@ -1739,6 +1758,8 @@ def page_vehicle_entry():
                     description,
                     amount
              ])
+                load_sheet_records.clear()
+                load_sheet_values.clear()
 
                 st.success("Expense recorded!")
 
@@ -1750,7 +1771,7 @@ def page_admin_submissions():
 
     st.markdown("## 📁 Pending Driver Submissions")
 
-    df = pd.DataFrame(daily_sheet.get_all_records())
+    df = pd.DataFrame(load_sheet_records("daily_reports", file.id))
 
     if df.empty:
         st.info("No submissions found.")
@@ -1844,7 +1865,7 @@ def page_admin_submissions():
 def page_admin_daily_entry():
 
     # Main page heading/subtitle are rendered centrally by the application shell.
-    drivers_current = pd.DataFrame(drivers_sheet.get_all_records())
+    drivers_current = pd.DataFrame(load_sheet_records("drivers", file.id))
 
     if drivers_current.empty or "driver_name" not in drivers_current.columns:
         st.warning("No drivers are available in the drivers sheet.")
@@ -2091,7 +2112,7 @@ def page_admin_daily_entry():
         st.info("Review the payment figures above, then click Save Daily Entry when ready.")
         return
 
-    master_df = pd.DataFrame(vehicle_master_sheet.get_all_records())
+    master_df = pd.DataFrame(load_sheet_records("vehicle_master", file.id))
     cost_per_km = 0.0
 
     if not master_df.empty and "vehicle_no" in master_df.columns:
@@ -2142,6 +2163,8 @@ def page_admin_daily_entry():
     ]
 
     daily_sheet.append_row(new_row)
+    load_sheet_records.clear()
+    load_sheet_values.clear()
 
     st.success(
         f"Daily entry saved successfully. Total Driver Payable: Rs. {total_driver_salary:,.2f} | "
@@ -2158,7 +2181,7 @@ def page_admin_daily_entry():
 # MONTHLY CASH FLOW
 # -------------------------------------------------------------------
 def page_monthly_cash_flow():
-    reports = pd.DataFrame(daily_sheet.get_all_records())
+    reports = pd.DataFrame(load_sheet_records("daily_reports", file.id))
 
     if reports.empty:
         st.info("No daily reports are available yet.")
@@ -2239,7 +2262,7 @@ def page_monthly_cash_flow():
         - monthly["platform_fee"]
     )
 
-    elec = pd.DataFrame(monthly_cash_flow_sheet.get_all_records())
+    elec = pd.DataFrame(load_sheet_records("monthly_cash_flow", file.id))
     if elec.empty:
         elec = pd.DataFrame(columns=["month", "electricity_bill", "updated_at", "note"])
     if "electricity_bill" not in elec.columns:
@@ -2273,7 +2296,7 @@ def page_monthly_cash_flow():
             st.error("Please enter a valid electricity bill amount.")
             return
 
-        values = monthly_cash_flow_sheet.get_all_values()
+        values = load_sheet_values("monthly_cash_flow", file.id)
         row_to_update = None
         for idx, row in enumerate(values[1:], start=2):
             if row and str(row[0]).strip() == selected_month:
@@ -2282,8 +2305,12 @@ def page_monthly_cash_flow():
         now_txt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if row_to_update:
             monthly_cash_flow_sheet.update(f"A{row_to_update}:D{row_to_update}", [[selected_month, bill, now_txt, note]])
+            load_sheet_records.clear()
+            load_sheet_values.clear()
         else:
             monthly_cash_flow_sheet.append_row([selected_month, bill, now_txt, note])
+            load_sheet_records.clear()
+            load_sheet_values.clear()
         st.success(f"Electricity bill saved for {selected_month}.")
         st.rerun()
 
@@ -2340,7 +2367,7 @@ def page_monthly_cash_flow():
 # SETTINGS — SAFE MASTER DATA EDITOR
 # -------------------------------------------------------------------
 def _settings_row_values(ws):
-    values = ws.get_all_values()
+    values = load_sheet_values(ws.title, file.id)
     if not values:
         return [], []
     return values[0], values[1:]
@@ -2406,6 +2433,8 @@ def page_settings():
                         f"A{sheet_row}:D{sheet_row}",
                         [[driver_name.strip(), username.strip(), password.strip(), vehicle_no.strip()]],
                     )
+                    load_sheet_records.clear()
+                    load_sheet_values.clear()
                     st.success("Driver settings updated successfully.")
                     st.rerun()
 
@@ -2458,6 +2487,8 @@ def page_settings():
                             purchase_cost, useful_years, cost_per_km,
                         ]],
                     )
+                    load_sheet_records.clear()
+                    load_sheet_values.clear()
                     st.success("Vehicle master settings updated successfully.")
                     st.rerun()
 
@@ -2493,6 +2524,8 @@ def page_settings():
                     f"A{sheet_row}:D{sheet_row}",
                     [[month.strip(), bill, now_txt, note.strip()]],
                 )
+                load_sheet_records.clear()
+                load_sheet_values.clear()
                 st.success("Electricity settings updated successfully.")
                 st.rerun()
 
